@@ -1,0 +1,140 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  VIEWER
+  MEMBER
+  LEAD
+  ADMIN
+}
+
+enum WorkItemType {
+  TASK
+  INCIDENT
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum Status {
+  OPEN
+  IN_PROGRESS
+  IN_REVIEW
+  RESOLVED
+  CLOSED
+}
+
+model Team {
+  id          String     @id @default(uuid())
+  name        String     @unique
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  users       User[]
+  workItems   WorkItem[]
+
+  @@map("teams")
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  passwordHash String
+  name         String
+  role         Role          @default(MEMBER)
+  teamId       String?
+  team         Team?         @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  reportedItems WorkItem[]    @relation("ReportedItems")
+  assignedItems WorkItem[]    @relation("AssignedItems")
+  comments      Comment[]
+  activities    ActivityLog[]
+
+  @@map("users")
+}
+
+model WorkItem {
+  id          String        @id @default(uuid())
+  title       String
+  description String
+  type        WorkItemType  @default(TASK)
+  priority    Priority      @default(MEDIUM)
+  status      Status        @default(OPEN)
+  
+  teamId      String
+  team        Team          @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  
+  reporterId  String
+  reporter    User          @relation("ReportedItems", fields: [reporterId], references: [id], onDelete: Restrict)
+  
+  assigneeId  String?
+  assignee    User?         @relation("AssignedItems", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  dueDate     DateTime?
+  version     Int           @default(1)
+  
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  comments    Comment[]
+  activities  ActivityLog[]
+
+  @@index([teamId, status])
+  @@index([assigneeId, status])
+  @@index([priority, status])
+  @@index([createdAt])
+  @@map("work_items")
+}
+
+model ActivityLog {
+  id         String    @id @default(uuid())
+  workItemId String
+  workItem   WorkItem  @relation(fields: [workItemId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  action     String    // e.g. "CREATED", "STATUS_CHANGE", "ASSIGNED", "PRIORITY_CHANGE", "UPDATED", "CLAIMED"
+  details    String?   // JSON string with { field, oldValue, newValue } or narrative
+  createdAt  DateTime  @default(now())
+
+  @@index([workItemId, createdAt])
+  @@map("activity_logs")
+}
+
+model Comment {
+  id         String    @id @default(uuid())
+  workItemId String
+  workItem   WorkItem  @relation(fields: [workItemId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  content    String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([workItemId, createdAt])
+  @@map("comments")
+}
+
+model IdempotencyRecord {
+  id             String    @id @default(uuid())
+  idempotencyKey String    @unique
+  statusCode     Int
+  responseBody   String    // JSON encoded
+  createdAt      DateTime  @default(now())
+  expiresAt      DateTime
+
+  @@index([expiresAt])
+  @@map("idempotency_records")
+}
