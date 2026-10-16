@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🛡️ Newtonite
 
 > **Enterprise Task Management & Incident Workflow Engine**  
@@ -181,3 +182,7 @@ Tests       7 passed (7)
 ## 9. Architecture Decisions Document
 
 For an in-depth breakdown of technical trade-offs, concurrency design, and security architecture, see [ENGINEERING_DECISIONS.md](file:///c:/Users/skuma/OneDrive/Desktop/Netwonite/ENGINEERING_DECISIONS.md).
+=======
+# newtonite-ops--23131012067-
+A full-stack operational task management system for teams, featuring role-based access control, task assignment, workflow approvals, activity history, and concurrent update handling.
+>>>>>>> 731d44824fdbdb451f61b8569d2113f7e279c754
