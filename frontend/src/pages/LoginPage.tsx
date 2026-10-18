@@ -4,14 +4,52 @@ import { useDemoUsersQuery } from '../hooks/useWorkItems';
 import { RoleBadge } from '../components/Badge';
 import { Shield, ArrowRight, Lock, Users } from 'lucide-react';
 
+const FALLBACK_DEMO_USERS = Array.from({ length: 20 }, (_, i) => {
+  const num = i + 1;
+  const email = `employ${num}@gmail.com`;
+  let role: any = 'MEMBER';
+  let teamName = 'General';
+  if (num === 20) {
+    role = 'ADMIN';
+    teamName = 'Leadership';
+  } else if (num === 1) {
+    role = 'LEAD';
+    teamName = 'Engineering';
+  } else if (num <= 5) {
+    role = 'MEMBER';
+    teamName = 'Engineering';
+  } else if (num === 6) {
+    role = 'LEAD';
+    teamName = 'DevOps';
+  } else if (num <= 10) {
+    role = 'MEMBER';
+    teamName = 'DevOps';
+  } else if (num <= 14) {
+    role = 'MEMBER';
+    teamName = 'Security';
+  } else {
+    role = 'VIEWER';
+    teamName = 'Operations';
+  }
+  return {
+    id: `fallback-${num}`,
+    name: num === 20 ? 'Employee 20 (Admin)' : `Employee ${num}`,
+    email,
+    role,
+    teamName,
+  };
+});
+
 export const LoginPage: React.FC = () => {
   const { login } = useAuth();
-  const { data: demoUsers, isLoading: demoLoading } = useDemoUsersQuery();
+  const { data: demoUsers } = useDemoUsersQuery();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('123456');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const activeDemoUsers = demoUsers && demoUsers.length > 0 ? demoUsers : FALLBACK_DEMO_USERS;
 
   const handleManualLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,19 +58,20 @@ export const LoginPage: React.FC = () => {
     try {
       await login(email, password);
     } catch (err: any) {
-      setErrorMsg(err.message || 'Login failed');
+      setErrorMsg(err.message || 'Login failed. If using free tier Render backend, it may take ~30-40s to spin up on first request.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDemoSelect = async (demoEmail: string) => {
+    setEmail(demoEmail);
     setErrorMsg(null);
     setIsSubmitting(true);
     try {
       await login(demoEmail, '123456');
     } catch (err: any) {
-      setErrorMsg(err.message || 'Demo login failed');
+      setErrorMsg(err.message || 'Login failed. If using free tier Render backend, it may take ~30-40s to spin up on first request.');
     } finally {
       setIsSubmitting(false);
     }
@@ -104,43 +143,41 @@ export const LoginPage: React.FC = () => {
               Select any pre-seeded persona (<strong style={{ color: '#0f172a' }}>employ1 to employ20</strong>) to test permissions, approval workflows, and atomic claim concurrency:
             </p>
 
-            {demoLoading ? (
-              <div style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>Loading demo accounts...</div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 420, overflowY: 'auto', paddingRight: 6 }}>
-                {demoUsers?.map((u) => (
-                  <button
-                    key={u.id}
-                    onClick={() => handleDemoSelect(u.email)}
-                    disabled={isSubmitting}
-                    className="glass-card"
-                    style={{
-                      padding: '12px 16px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      textAlign: 'left',
-                      background: 'rgba(255, 255, 255, 0.03)',
-                      borderColor: 'rgba(255, 255, 255, 0.08)',
-                      borderRadius: 10,
-                    }}
-                  >
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#0f172a' }}>
-                          {u.name}
-                        </span>
-                        <RoleBadge role={u.role} />
-                      </div>
-                      <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)', marginTop: 2 }}>
-                        {u.teamName} &bull; <span className="font-mono">{u.email}</span>
-                      </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 420, overflowY: 'auto', paddingRight: 6 }}>
+              {activeDemoUsers.map((u) => (
+                <button
+                  key={u.id}
+                  type="button"
+                  onClick={() => handleDemoSelect(u.email)}
+                  disabled={isSubmitting}
+                  className="glass-card"
+                  style={{
+                    padding: '12px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    textAlign: 'left',
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    borderColor: 'rgba(255, 255, 255, 0.08)',
+                    borderRadius: 10,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#0f172a' }}>
+                        {u.name}
+                      </span>
+                      <RoleBadge role={u.role} />
                     </div>
-                    <ArrowRight size={16} color="#6366f1" />
-                  </button>
-                ))}
-              </div>
-            )}
+                    <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)', marginTop: 2 }}>
+                      {u.teamName} &bull; <span className="font-mono">{u.email}</span>
+                    </div>
+                  </div>
+                  <ArrowRight size={16} color="#6366f1" />
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Right Column: Direct Credential Login */}
