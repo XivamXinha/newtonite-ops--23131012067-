@@ -11,13 +11,12 @@ dotenv.config();
 
 export const app = express();
 
-const allowedOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
-  : true;
-
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      // Allow any origin and reflect it back to satisfy browser CORS with credentials: true
+      callback(null, true);
+    },
     credentials: true,
   })
 );
