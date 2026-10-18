@@ -127,14 +127,14 @@ export const LoginPage: React.FC = () => {
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        padding: '32px 20px',
+        padding: '30px 16px',
         boxSizing: 'border-box',
         color: '#0f172a',
       }}
     >
-      <div style={{ maxWidth: 1400, width: '100%' }}>
+      <div style={{ maxWidth: 1540, width: '100%' }}>
         {/* Brand Header */}
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+        <div style={{ textAlign: 'center', marginBottom: 26 }}>
           <div
             style={{
               width: 52,
@@ -152,7 +152,7 @@ export const LoginPage: React.FC = () => {
           </div>
           <h1
             style={{
-              fontSize: '2.2rem',
+              fontSize: '2.1rem',
               fontWeight: 800,
               letterSpacing: '-0.03em',
               color: '#0f172a',
@@ -161,35 +161,35 @@ export const LoginPage: React.FC = () => {
           >
             Newtonite Operations
           </h1>
-          <p style={{ color: '#64748b', fontSize: '0.95rem', marginTop: 4 }}>
-            Enterprise Task Management & Incident Workflow Engine — Role-Based Access Control
+          <p style={{ color: '#64748b', fontSize: '0.94rem', marginTop: 4 }}>
+            Enterprise Task Management & Cross-Team Incident Workflow Engine
           </p>
         </div>
 
-        {/* 3-Column Architecture matching user wireframe */}
+        {/* 4 DISTINCT CARDS: [1. REVIEWER / ANALYST] | [2. ADMIN] | [3. EMPLOYEE ID] | [4. SIGN IN WITH CREDENTIALS] */}
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-            gap: 24,
+            gridTemplateColumns: 'repeat(auto-fit, minmax(310px, 1fr))',
+            gap: 20,
             alignItems: 'stretch',
           }}
         >
-          {/* ================= COLUMN 1 (LEFT): VIEWER BOX (TOP) + ADMIN BOX (BOTTOM) ================= */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {/* BOX 1: VIEWER / ANALYST */}
-            <div
-              style={{
-                backgroundColor: '#ffffff',
-                borderRadius: 16,
-                padding: '22px 24px',
-                border: '1px solid #e2e8f0',
-                borderTop: '4px solid #10b981',
-                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.05)',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
+          {/* ================= CARD 1: REVIEWER / ANALYST (VIEWER) ================= */}
+          <div
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: 16,
+              padding: '22px 20px',
+              border: '1px solid #e2e8f0',
+              borderTop: '5px solid #10b981',
+              boxShadow: '0 4px 18px rgba(0, 0, 0, 0.05)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div
@@ -207,27 +207,15 @@ export const LoginPage: React.FC = () => {
                     <BarChart3 size={20} color="#059669" />
                   </div>
                   <div>
-                    <h2 style={{ fontSize: '1.10rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                      Viewer (Analyst) Box
+                    <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                      1. Reviewer / Analyst
                     </h2>
-                    <span style={{ fontSize: '0.74rem', color: '#059669', fontWeight: 700 }}>
-                      5 Dedicated Auditor Accounts
+                    <span style={{ fontSize: '0.72rem', color: '#059669', fontWeight: 700 }}>
+                      5 Dedicated Accounts
                     </span>
                   </div>
                 </div>
-                <span
-                  style={{
-                    fontSize: '0.70rem',
-                    fontWeight: 800,
-                    padding: '3px 9px',
-                    borderRadius: 9999,
-                    backgroundColor: '#ecfdf5',
-                    color: '#047857',
-                    border: '1px solid #a7f3d0',
-                  }}
-                >
-                  VIEWER
-                </span>
+                <RoleBadge role="VIEWER" />
               </div>
 
               {/* Exact detail requested: "alalysist can do view or analysis work" */}
@@ -237,13 +225,13 @@ export const LoginPage: React.FC = () => {
                   borderRadius: 8,
                   backgroundColor: '#f0fdf4',
                   border: '1px solid #bbf7d0',
-                  fontSize: '0.78rem',
+                  fontSize: '0.76rem',
                   color: '#166534',
                   lineHeight: 1.45,
                   marginBottom: 14,
                 }}
               >
-                📊 <strong>Analyst can do view or analysis work:</strong> Inspect all squads, analyze which team created what work item, who claimed it, and audit lead approval vs rework status.
+                📊 <strong>Reviewer can do view or analysis work:</strong> Inspect all squads, analyze which team created what work item, who claimed it, and audit lead approval vs rework status.
               </div>
 
               <div
@@ -251,7 +239,7 @@ export const LoginPage: React.FC = () => {
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 8,
-                  maxHeight: 230,
+                  maxHeight: 330,
                   overflowY: 'auto',
                   paddingRight: 4,
                 }}
@@ -263,7 +251,7 @@ export const LoginPage: React.FC = () => {
                     onClick={() => handleDemoSelect(u.email)}
                     disabled={isSubmitting}
                     style={{
-                      padding: '10px 14px',
+                      padding: '10px 12px',
                       borderRadius: 10,
                       backgroundColor: '#f8fafc',
                       border: '1px solid #e2e8f0',
@@ -287,10 +275,10 @@ export const LoginPage: React.FC = () => {
                     }}
                   >
                     <div style={{ overflow: 'hidden' }}>
-                      <div style={{ fontSize: '0.84rem', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {u.name}
                       </div>
-                      <div style={{ fontSize: '0.74rem', color: '#64748b', fontFamily: 'var(--font-mono)' }}>
+                      <div style={{ fontSize: '0.72rem', color: '#64748b', fontFamily: 'var(--font-mono)' }}>
                         {u.email}
                       </div>
                     </div>
@@ -300,19 +288,26 @@ export const LoginPage: React.FC = () => {
               </div>
             </div>
 
-            {/* BOX 2: ADMIN */}
-            <div
-              style={{
-                backgroundColor: '#ffffff',
-                borderRadius: 16,
-                padding: '22px 24px',
-                border: '1px solid #e2e8f0',
-                borderTop: '4px solid #6366f1',
-                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.05)',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
+            <div style={{ marginTop: 14, fontSize: '0.70rem', color: '#059669', fontWeight: 600, textAlign: 'center' }}>
+              ✓ Dedicated read-only audit governance
+            </div>
+          </div>
+
+          {/* ================= CARD 2: ADMIN (ADMINISTRATOR) ================= */}
+          <div
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: 16,
+              padding: '22px 20px',
+              border: '1px solid #e2e8f0',
+              borderTop: '5px solid #6366f1',
+              boxShadow: '0 4px 18px rgba(0, 0, 0, 0.05)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div
@@ -330,11 +325,11 @@ export const LoginPage: React.FC = () => {
                     <Crown size={20} color="#4f46e5" />
                   </div>
                   <div>
-                    <h2 style={{ fontSize: '1.10rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                      Admin Box
+                    <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                      2. Admin Console
                     </h2>
-                    <span style={{ fontSize: '0.74rem', color: '#4f46e5', fontWeight: 700 }}>
-                      Platform Governance
+                    <span style={{ fontSize: '0.72rem', color: '#4f46e5', fontWeight: 700 }}>
+                      System Governance
                     </span>
                   </div>
                 </div>
@@ -347,7 +342,7 @@ export const LoginPage: React.FC = () => {
                   borderRadius: 8,
                   backgroundColor: '#f5f3ff',
                   border: '1px solid #ddd6fe',
-                  fontSize: '0.78rem',
+                  fontSize: '0.76rem',
                   color: '#5b21b6',
                   lineHeight: 1.45,
                   marginBottom: 14,
@@ -363,7 +358,7 @@ export const LoginPage: React.FC = () => {
                   onClick={() => handleDemoSelect(u.email)}
                   disabled={isSubmitting}
                   style={{
-                    padding: '12px 14px',
+                    padding: '14px 16px',
                     borderRadius: 10,
                     backgroundColor: '#faf5ff',
                     border: '1px solid #e9d5ff',
@@ -387,224 +382,253 @@ export const LoginPage: React.FC = () => {
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0f172a' }}>
+                    <div style={{ fontSize: '0.90rem', fontWeight: 800, color: '#0f172a' }}>
                       {u.name}
                     </div>
-                    <div style={{ fontSize: '0.74rem', color: '#6b21a8', fontFamily: 'var(--font-mono)', marginTop: 2 }}>
+                    <div style={{ fontSize: '0.76rem', color: '#6b21a8', fontFamily: 'var(--font-mono)', marginTop: 3 }}>
                       {u.email}
                     </div>
+                    <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: 2 }}>
+                      {u.teamName}
+                    </div>
                   </div>
-                  <ArrowRight size={16} color="#7c3aed" />
+                  <ArrowRight size={18} color="#7c3aed" />
                 </button>
               ))}
+
+              <div
+                style={{
+                  marginTop: 16,
+                  padding: '12px 14px',
+                  borderRadius: 10,
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  fontSize: '0.74rem',
+                  color: '#64748b',
+                  lineHeight: 1.5,
+                }}
+              >
+                ⚡ <strong>Admin Capabilities:</strong>
+                <ul style={{ margin: '6px 0 0 16px', padding: 0 }}>
+                  <li>Create and assign squads/teams</li>
+                  <li>Promote members or appoint leads</li>
+                  <li>View enterprise OCC concurrency stats</li>
+                </ul>
+              </div>
+            </div>
+
+            <div style={{ marginTop: 14, fontSize: '0.70rem', color: '#4f46e5', fontWeight: 600, textAlign: 'center' }}>
+              ✓ Full tenant administrative authority
             </div>
           </div>
 
-          {/* ================= COLUMN 2 (MIDDLE): EMPLOYEE BOX (LEADS & MEMBERS) ================= */}
+          {/* ================= CARD 3: EMPLOYEE ID (LEADS & MEMBERS) ================= */}
           <div
             style={{
               backgroundColor: '#ffffff',
               borderRadius: 16,
-              padding: '22px 24px',
+              padding: '22px 20px',
               border: '1px solid #e2e8f0',
-              borderTop: '4px solid #0284c7',
-              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.05)',
-              display: 'flex',
-              flexDirection: 'column',
-              height: '100%',
-              boxSizing: 'border-box',
-            }}
-          >
-            {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div
-                  style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: 10,
-                    backgroundColor: '#f0f9ff',
-                    border: '1px solid #bae6fd',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Users size={20} color="#0284c7" />
-                </div>
-                <div>
-                  <h2 style={{ fontSize: '1.10rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                    Employee ID Box
-                  </h2>
-                  <span style={{ fontSize: '0.74rem', color: '#64748b' }}>
-                    Leads & Members ({allEmployees.length} Accounts)
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Exact details requested by user */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
-              <div
-                style={{
-                  padding: '9px 12px',
-                  borderRadius: 8,
-                  backgroundColor: '#fffbeb',
-                  border: '1px solid #fde68a',
-                  fontSize: '0.78rem',
-                  color: '#92400e',
-                  lineHeight: 1.45,
-                }}
-              >
-                ⚡ <strong>Lead can control access:</strong> Review task requests, assign work, approve completed tasks, or return/reject for revisions with remarks.
-              </div>
-
-              <div
-                style={{
-                  padding: '9px 12px',
-                  borderRadius: 8,
-                  backgroundColor: '#eff6ff',
-                  border: '1px solid #bfdbfe',
-                  fontSize: '0.78rem',
-                  color: '#1e40af',
-                  lineHeight: 1.45,
-                }}
-              >
-                👥 <strong>Employee work as following:</strong> Claim unassigned tasks from squad queue, execute work in progress, and submit deliverables for lead sign-off.
-              </div>
-            </div>
-
-            {/* Filter Pills & Quick Search */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 8,
-                marginBottom: 12,
-                flexWrap: 'wrap',
-              }}
-            >
-              <div style={{ display: 'flex', gap: 4 }}>
-                {(['ALL', 'LEAD', 'MEMBER'] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    type="button"
-                    onClick={() => setEmployeeFilter(tab)}
-                    style={{
-                      padding: '4px 11px',
-                      borderRadius: 16,
-                      fontSize: '0.74rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      border: 'none',
-                      backgroundColor: employeeFilter === tab ? '#0284c7' : '#f1f5f9',
-                      color: employeeFilter === tab ? '#ffffff' : '#475569',
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    {tab === 'ALL' ? `All (${allEmployees.length})` : tab === 'LEAD' ? '⚡ Leads' : '👥 Members'}
-                  </button>
-                ))}
-              </div>
-
-              <div style={{ position: 'relative', width: 140 }}>
-                <Search size={13} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  value={employeeSearch}
-                  onChange={(e) => setEmployeeSearch(e.target.value)}
-                  style={{
-                    padding: '4px 8px 4px 26px',
-                    borderRadius: 6,
-                    fontSize: '0.74rem',
-                    backgroundColor: '#f8fafc',
-                    border: '1px solid #cbd5e1',
-                    color: '#0f172a',
-                    width: '100%',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Scrollable List of Employees */}
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 8,
-                flex: 1,
-                maxHeight: 390,
-                overflowY: 'auto',
-                paddingRight: 4,
-              }}
-            >
-              {filteredEmployees.map((u: any) => {
-                const isLead = u.role === 'LEAD';
-                return (
-                  <button
-                    key={u.id}
-                    type="button"
-                    onClick={() => handleDemoSelect(u.email)}
-                    disabled={isSubmitting}
-                    style={{
-                      padding: '10px 14px',
-                      borderRadius: 10,
-                      backgroundColor: isLead ? '#fffbeb' : '#f8fafc',
-                      border: isLead ? '1px solid #fde68a' : '1px solid #e2e8f0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      transition: 'all 0.15s ease',
-                      width: '100%',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = isLead ? '#fef3c7' : '#eff6ff';
-                      e.currentTarget.style.borderColor = isLead ? '#f59e0b' : '#3b82f6';
-                      e.currentTarget.style.transform = 'translateY(-1px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = isLead ? '#fffbeb' : '#f8fafc';
-                      e.currentTarget.style.borderColor = isLead ? '#fde68a' : '#e2e8f0';
-                      e.currentTarget.style.transform = 'none';
-                    }}
-                  >
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontSize: '0.84rem', fontWeight: 700, color: '#0f172a' }}>
-                          {u.name}
-                        </span>
-                        <RoleBadge role={u.role} />
-                      </div>
-                      <div style={{ fontSize: '0.74rem', color: '#64748b', marginTop: 2 }}>
-                        {u.teamName} &bull; <span className="font-mono">{u.email}</span>
-                      </div>
-                    </div>
-                    <ArrowRight size={16} color={isLead ? '#d97706' : '#2563eb'} />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* ================= COLUMN 3 (RIGHT): SIGN IN WITH CREDENTIALS BOX ================= */}
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              borderRadius: 16,
-              padding: '24px 26px',
-              border: '1px solid #e2e8f0',
-              borderTop: '4px solid #4f46e5',
-              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.05)',
+              borderTop: '5px solid #0284c7',
+              boxShadow: '0 4px 18px rgba(0, 0, 0, 0.05)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              height: '100%',
-              boxSizing: 'border-box',
+            }}
+          >
+            <div>
+              {/* Header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div
+                    style={{
+                      width: 38,
+                      height: 38,
+                      borderRadius: 10,
+                      backgroundColor: '#f0f9ff',
+                      border: '1px solid #bae6fd',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Users size={20} color="#0284c7" />
+                  </div>
+                  <div>
+                    <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                      3. Employee Directory
+                    </h2>
+                    <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                      Leads & Members ({allEmployees.length})
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Exact details requested by user */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+                <div
+                  style={{
+                    padding: '8px 10px',
+                    borderRadius: 8,
+                    backgroundColor: '#fffbeb',
+                    border: '1px solid #fde68a',
+                    fontSize: '0.74rem',
+                    color: '#92400e',
+                    lineHeight: 1.4,
+                  }}
+                >
+                  ⚡ <strong>Lead can control access:</strong> Review task requests, assign work, approve completed tasks, or return/reject for revisions.
+                </div>
+
+                <div
+                  style={{
+                    padding: '8px 10px',
+                    borderRadius: 8,
+                    backgroundColor: '#eff6ff',
+                    border: '1px solid #bfdbfe',
+                    fontSize: '0.74rem',
+                    color: '#1e40af',
+                    lineHeight: 1.4,
+                  }}
+                >
+                  👥 <strong>Employee work as following:</strong> Claim unassigned tasks from squad queue, execute work, and submit deliverables for lead sign-off.
+                </div>
+              </div>
+
+              {/* Filter Pills & Quick Search */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 6,
+                  marginBottom: 10,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <div style={{ display: 'flex', gap: 3 }}>
+                  {(['ALL', 'LEAD', 'MEMBER'] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      type="button"
+                      onClick={() => setEmployeeFilter(tab)}
+                      style={{
+                        padding: '3px 8px',
+                        borderRadius: 14,
+                        fontSize: '0.70rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        border: 'none',
+                        backgroundColor: employeeFilter === tab ? '#0284c7' : '#f1f5f9',
+                        color: employeeFilter === tab ? '#ffffff' : '#475569',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      {tab === 'ALL' ? `All (${allEmployees.length})` : tab === 'LEAD' ? '⚡ Leads' : '👥 Members'}
+                    </button>
+                  ))}
+                </div>
+
+                <div style={{ position: 'relative', width: 110 }}>
+                  <Search size={12} style={{ position: 'absolute', left: 6, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    value={employeeSearch}
+                    onChange={(e) => setEmployeeSearch(e.target.value)}
+                    style={{
+                      padding: '3px 6px 3px 22px',
+                      borderRadius: 6,
+                      fontSize: '0.70rem',
+                      backgroundColor: '#f8fafc',
+                      border: '1px solid #cbd5e1',
+                      color: '#0f172a',
+                      width: '100%',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Scrollable List of Employees */}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 7,
+                  maxHeight: 280,
+                  overflowY: 'auto',
+                  paddingRight: 4,
+                }}
+              >
+                {filteredEmployees.map((u: any) => {
+                  const isLead = u.role === 'LEAD';
+                  return (
+                    <button
+                      key={u.id}
+                      type="button"
+                      onClick={() => handleDemoSelect(u.email)}
+                      disabled={isSubmitting}
+                      style={{
+                        padding: '8px 10px',
+                        borderRadius: 8,
+                        backgroundColor: isLead ? '#fffbeb' : '#f8fafc',
+                        border: isLead ? '1px solid #fde68a' : '1px solid #e2e8f0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        transition: 'all 0.15s ease',
+                        width: '100%',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = isLead ? '#fef3c7' : '#eff6ff';
+                        e.currentTarget.style.borderColor = isLead ? '#f59e0b' : '#3b82f6';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = isLead ? '#fffbeb' : '#f8fafc';
+                        e.currentTarget.style.borderColor = isLead ? '#fde68a' : '#e2e8f0';
+                        e.currentTarget.style.transform = 'none';
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: '0.80rem', fontWeight: 700, color: '#0f172a' }}>
+                            {u.name}
+                          </span>
+                          <RoleBadge role={u.role} />
+                        </div>
+                        <div style={{ fontSize: '0.70rem', color: '#64748b', marginTop: 1 }}>
+                          {u.teamName} &bull; <span className="font-mono">{u.email}</span>
+                        </div>
+                      </div>
+                      <ArrowRight size={14} color={isLead ? '#d97706' : '#2563eb'} />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ marginTop: 14, fontSize: '0.70rem', color: '#0284c7', fontWeight: 600, textAlign: 'center' }}>
+              ✓ Squad workflow & task execution personas
+            </div>
+          </div>
+
+          {/* ================= CARD 4: SIGN IN WITH CREDENTIALS ================= */}
+          <div
+            style={{
+              backgroundColor: '#ffffff',
+              borderRadius: 16,
+              padding: '22px 20px',
+              border: '1px solid #e2e8f0',
+              borderTop: '5px solid #4f46e5',
+              boxShadow: '0 4px 18px rgba(0, 0, 0, 0.05)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
             }}
           >
             <div>
@@ -624,24 +648,24 @@ export const LoginPage: React.FC = () => {
                   <Lock size={20} color="#4f46e5" />
                 </div>
                 <div>
-                  <h2 style={{ fontSize: '1.10rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                    Sign In with Credentials
+                  <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                    4. Sign In Form
                   </h2>
-                  <span style={{ fontSize: '0.74rem', color: '#64748b' }}>
-                    Manual authentication form
+                  <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                    Manual Credentials
                   </span>
                 </div>
               </div>
 
               <div
                 style={{
-                  padding: '10px 12px',
+                  padding: '9px 12px',
                   borderRadius: 8,
                   backgroundColor: '#f8fafc',
                   border: '1px solid #e2e8f0',
-                  fontSize: '0.78rem',
+                  fontSize: '0.76rem',
                   color: '#475569',
-                  marginBottom: 16,
+                  marginBottom: 14,
                   lineHeight: 1.4,
                 }}
               >
@@ -651,22 +675,22 @@ export const LoginPage: React.FC = () => {
               {errorMsg && (
                 <div
                   style={{
-                    padding: '10px 12px',
+                    padding: '9px 12px',
                     borderRadius: 8,
                     backgroundColor: '#fef2f2',
                     border: '1px solid #fecaca',
                     color: '#b91c1c',
-                    fontSize: '0.80rem',
-                    marginBottom: 16,
+                    fontSize: '0.76rem',
+                    marginBottom: 14,
                   }}
                 >
                   {errorMsg}
                 </div>
               )}
 
-              <form onSubmit={handleManualLogin} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <form onSubmit={handleManualLogin} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#334155', marginBottom: 5 }}>
                     Email Address
                   </label>
                   <input
@@ -679,7 +703,7 @@ export const LoginPage: React.FC = () => {
                     style={{
                       width: '100%',
                       boxSizing: 'border-box',
-                      padding: '10px 12px',
+                      padding: '9px 12px',
                       borderRadius: 8,
                       backgroundColor: '#ffffff',
                       border: '1px solid #cbd5e1',
@@ -689,7 +713,7 @@ export const LoginPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#334155', marginBottom: 5 }}>
                     Password
                   </label>
                   <input
@@ -702,7 +726,7 @@ export const LoginPage: React.FC = () => {
                     style={{
                       width: '100%',
                       boxSizing: 'border-box',
-                      padding: '10px 12px',
+                      padding: '9px 12px',
                       borderRadius: 8,
                       backgroundColor: '#ffffff',
                       border: '1px solid #cbd5e1',
@@ -715,8 +739,8 @@ export const LoginPage: React.FC = () => {
                   type="submit"
                   className="btn btn-primary"
                   style={{
-                    marginTop: 6,
-                    padding: '12px 16px',
+                    marginTop: 4,
+                    padding: '11px 16px',
                     fontWeight: 700,
                     backgroundColor: '#4f46e5',
                     border: 'none',
@@ -735,22 +759,20 @@ export const LoginPage: React.FC = () => {
 
             <div
               style={{
-                marginTop: 20,
-                padding: '12px 14px',
+                marginTop: 16,
+                padding: '10px 12px',
                 borderRadius: 10,
                 backgroundColor: '#f8fafc',
                 border: '1px solid #e2e8f0',
-                fontSize: '0.76rem',
+                fontSize: '0.72rem',
                 color: '#64748b',
-                lineHeight: 1.5,
+                lineHeight: 1.45,
               }}
             >
-              💡 <strong>Separated Access Boxes:</strong>
-              <ul style={{ margin: '6px 0 0 16px', padding: 0 }}>
-                <li><strong>Admin Box:</strong> System setup & global oversight</li>
-                <li><strong>Employee Box:</strong> Leads control access & Members work</li>
-                <li><strong>Viewer Box:</strong> Organization audit & workflow analysis</li>
-              </ul>
+              💡 <strong>4 Distinct Access Roles:</strong>
+              <div style={{ marginTop: 4 }}>
+                Reviewer / Analyst &bull; Admin &bull; Lead &bull; Member
+              </div>
             </div>
           </div>
         </div>
