@@ -379,6 +379,10 @@ const memoryStore = {
         };
       });
     },
+    async findFirst(args?: any) {
+      const list = await (this as any).findMany(args);
+      return list.length > 0 ? list[0] : null;
+    },
     async create(args: { data: any }) {
       const log = {
         id: `act-${Date.now()}-${Math.floor(Math.random() * 1000)}`,

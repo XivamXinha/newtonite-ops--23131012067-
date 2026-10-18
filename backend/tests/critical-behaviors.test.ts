@@ -30,6 +30,8 @@ vi.mock('../src/utils/db', () => {
       },
       activityLog: {
         create: vi.fn(),
+        findFirst: vi.fn(),
+        findMany: vi.fn(),
       },
       comment: {
         create: vi.fn(),

@@ -41,6 +41,18 @@ export const errorHandler = (err: any, _req: Request, res: Response, _next: Next
     });
   }
 
+  // Prisma Client Validation Error (e.g., unknown argument or invalid data)
+  if (err && (err.name === 'PrismaClientValidationError' || err.constructor?.name === 'PrismaClientValidationError')) {
+    console.error('Prisma Validation Error:', err.message);
+    return res.status(400).json({
+      success: false,
+      error: {
+        name: 'PrismaValidationError',
+        message: err.message || 'Database validation error occurred.',
+      },
+    });
+  }
+
   console.error('Unhandled Server Error:', err);
   return res.status(500).json({
     success: false,

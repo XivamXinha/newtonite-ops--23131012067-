@@ -230,7 +230,6 @@ export class WorkItemService {
           priority: input.priority,
           status: initialStatus,
           teamId: assignedTeamId,
-          targetTeamId: input.targetTeamId || null,
           reporterId: user.id,
           assigneeId: isCrossTeam ? null : (input.assigneeId || null),
           dueDate,
@@ -535,9 +534,28 @@ export class WorkItemService {
     }
 
     // Flow 3 Stage 1 check: Is this a member cross-team request awaiting origin lead approval to forward?
+    let crossTeamDestinationId: string | null = null;
+    if (prisma.activityLog && typeof (prisma.activityLog as any).findFirst === 'function') {
+      const createLog = await (prisma.activityLog as any).findFirst({
+        where: {
+          workItemId: id,
+          action: { in: ['CROSS_TEAM_REQUEST_BY_MEMBER', 'CROSS_TEAM_REQUEST_BY_LEAD'] }
+        },
+        orderBy: { createdAt: 'asc' }
+      });
+      if (createLog && createLog.details) {
+        try {
+          const details = JSON.parse(createLog.details);
+          crossTeamDestinationId = details.targetTeamId || null;
+        } catch {
+          // ignore
+        }
+      }
+    }
+
     const isOriginLeadForwarding =
       item.status === Status.IN_REVIEW &&
-      Boolean((item as any).targetTeamId && (item as any).targetTeamId !== item.teamId) &&
+      Boolean(crossTeamDestinationId && crossTeamDestinationId !== item.teamId) &&
       (targetStatus === Status.IN_REVIEW || targetStatus === Status.OPEN);
 
     // Accepting, forwarding, returning, or rejecting cross-team request or review item requires Lead or Admin role
@@ -568,9 +586,9 @@ export class WorkItemService {
       let actionName = 'STATUS_CHANGE';
       let message: string | undefined;
 
-      if (isOriginLeadForwarding) {
+      if (isOriginLeadForwarding && crossTeamDestinationId) {
         // Flow 3 Stage 1: Origin Team Lead approves -> Forward to destination team for destination Lead approval!
-        updateData.teamId = (item as any).targetTeamId;
+        updateData.teamId = crossTeamDestinationId;
         updateData.status = Status.IN_REVIEW; // Remains in IN_REVIEW for destination Lead to accept
         actionName = 'APPROVED_BY_ORIGIN_LEAD';
         message = `Flow 3: Cross-team request approved by origin Team Lead ${user.name}. Forwarded to destination Team Lead for acceptance.`;
