@@ -33,7 +33,15 @@ export class WorkItemService {
     // FR-12: Team isolation. Regular users only see their team. Admins see all or filter.
     if (user.role !== Role.ADMIN) {
       if (!user.teamId) {
-        throw new ForbiddenError('User has no team assigned');
+        return {
+          items: [],
+          pagination: {
+            totalCount: 0,
+            page,
+            limit,
+            totalPages: 1,
+          },
+        };
       }
       where.teamId = user.teamId;
     } else if (query.teamId) {

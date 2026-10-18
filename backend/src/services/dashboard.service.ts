@@ -210,15 +210,19 @@ export class DashboardService {
         newTasks,
       },
       teamActivities,
-      allTeams: allTeams.map((t: any) => ({
-        id: t.id,
-        name: t.name,
-        description: t.description,
-        leadUserId: t.leadUserId,
-        memberUserIds: t.memberUserIds,
-        users: t.users || [],
-        workItems: t.workItems || [],
-      })),
+      allTeams: allTeams.map((t: any) => {
+        const lead = t.users?.find((u: any) => u.role === Role.LEAD);
+        const members = t.users?.filter((u: any) => u.role !== Role.LEAD) || [];
+        return {
+          id: t.id,
+          name: t.name,
+          description: t.description,
+          leadUserId: lead?.id || null,
+          memberUserIds: members.map((m: any) => m.id),
+          users: t.users || [],
+          workItems: t.workItems || [],
+        };
+      }),
       myTeam: leadTeam || memberTeam || null,
       leadTeam,
       memberTeam,

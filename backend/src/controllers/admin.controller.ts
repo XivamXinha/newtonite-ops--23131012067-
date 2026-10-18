@@ -7,7 +7,22 @@ import { Role, Status, Priority } from '@prisma/client';
 export class AdminController {
   static async getTeams(_req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const teams = await prisma.team.findMany();
+      const teams = await prisma.team.findMany({
+        include: {
+          users: { select: { id: true, name: true, email: true, role: true } },
+          workItems: {
+            select: {
+              id: true,
+              title: true,
+              status: true,
+              priority: true,
+              type: true,
+              assignee: { select: { id: true, name: true, email: true } },
+            },
+          },
+        },
+        orderBy: { name: 'asc' },
+      });
       return res.status(200).json({ success: true, data: teams });
     } catch (err) {
       next(err);
@@ -23,13 +38,21 @@ export class AdminController {
       if (!name || !name.trim()) {
         return res.status(400).json({ success: false, message: 'Team name is required' });
       }
+
+      // Check duplicate team name
+      const existing = await prisma.team.findUnique({
+        where: { name: name.trim() },
+      });
+      if (existing) {
+        return res.status(400).json({ success: false, message: 'A team with this name already exists' });
+      }
+
+      // Create team with valid Prisma fields only
       const team = await prisma.team.create({
         data: {
           name: name.trim(),
           description: description?.trim() || null,
-          leadUserId: leadUserId || null,
-          memberUserIds: Array.isArray(memberUserIds) ? memberUserIds : [],
-        } as any,
+        },
       });
 
       // Assign selected Team Lead
@@ -52,7 +75,15 @@ export class AdminController {
         }
       }
 
-      return res.status(201).json({ success: true, data: team });
+      const populatedTeam = await prisma.team.findUnique({
+        where: { id: team.id },
+        include: {
+          users: { select: { id: true, name: true, email: true, role: true } },
+          workItems: true,
+        },
+      });
+
+      return res.status(201).json({ success: true, data: populatedTeam });
     } catch (err) {
       next(err);
     }
@@ -69,6 +100,12 @@ export class AdminController {
         throw new NotFoundError('Team not found');
       }
 
+      // Safely unassign all users from this team first
+      await prisma.user.updateMany({
+        where: { teamId: id },
+        data: { teamId: null, role: Role.MEMBER },
+      });
+
       await prisma.team.delete({ where: { id } });
 
       return res.status(200).json({ success: true, message: 'Team successfully dropped' });
@@ -79,7 +116,12 @@ export class AdminController {
 
   static async getUsers(_req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
-      const users = await prisma.user.findMany();
+      const users = await prisma.user.findMany({
+        include: {
+          team: { select: { id: true, name: true, description: true } },
+        },
+        orderBy: { name: 'asc' },
+      });
       return res.status(200).json({ success: true, data: users });
     } catch (err) {
       next(err);
@@ -98,7 +140,10 @@ export class AdminController {
         where: { id },
         data: {
           ...(role ? { role } : {}),
-          ...(teamId !== undefined ? { teamId } : {}),
+          ...(teamId !== undefined ? { teamId: teamId === '' || teamId === 'unassigned' ? null : teamId } : {}),
+        },
+        include: {
+          team: true,
         },
       });
 
