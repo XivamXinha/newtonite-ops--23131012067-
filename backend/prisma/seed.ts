@@ -153,7 +153,7 @@ async function main() {
   await prisma.activityLog.create({
     data: {
       workItemId: item3.id,
-      userId: bob.id,
+      userId: employ2.id,
       action: 'STATUS_CHANGE',
       details: JSON.stringify({ from: 'IN_PROGRESS', to: 'IN_REVIEW', reason: 'PR passed tests, awaiting Lead sign-off' }),
     },
@@ -162,12 +162,12 @@ async function main() {
   await prisma.comment.create({
     data: {
       workItemId: item3.id,
-      userId: bob.id,
-      content: 'All Vitest test suites passed locally. Ready for Alice to review and approve.',
+      userId: employ2.id,
+      content: 'All Vitest test suites passed locally. Ready for Employee 1 to review and approve.',
     },
   });
 
-  // Item 4: Assigned to Bob (Engineering)
+  // Item 4: Assigned to Employee 2 (Engineering)
   const item4 = await prisma.workItem.create({
     data: {
       title: 'Refactor TanStack Query caching for optimistic task updates',
@@ -176,8 +176,8 @@ async function main() {
       priority: Priority.MEDIUM,
       status: Status.IN_PROGRESS,
       teamId: engTeam.id,
-      reporterId: alice.id,
-      assigneeId: bob.id,
+      reporterId: employ1.id,
+      assigneeId: employ2.id,
       dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
       version: 1,
     },
