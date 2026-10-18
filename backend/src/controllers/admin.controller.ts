@@ -136,6 +136,19 @@ export class AdminController {
       const { id } = req.params;
       const { role, teamId } = req.body;
 
+      const targetUser = await prisma.user.findUnique({ where: { id } });
+      if (!targetUser) {
+        throw new NotFoundError('User not found');
+      }
+
+      if (targetUser.role === Role.VIEWER) {
+        throw new ForbiddenError('Dedicated Viewer / Analyst accounts are system governance roles and cannot be modified by Admins');
+      }
+
+      if (role === Role.VIEWER) {
+        throw new ForbiddenError('Viewer / Analyst role is dedicated and cannot be granted via admin role assignment');
+      }
+
       const updated = await prisma.user.update({
         where: { id },
         data: {

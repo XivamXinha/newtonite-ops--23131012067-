@@ -131,7 +131,7 @@ export const RoleBadge: React.FC<{ role: Role }> = ({ role }) => {
     ADMIN: { bg: '#fef2f2', text: '#991b1b', border: '#fecaca' },
     LEAD: { bg: '#fffbeb', text: '#92400e', border: '#fde68a' },
     MEMBER: { bg: '#eef2ff', text: '#3730a3', border: '#c7d2fe' },
-    VIEWER: { bg: '#f8fafc', text: '#475569', border: '#e2e8f0' },
+    VIEWER: { bg: '#ecfdf5', text: '#047857', border: '#a7f3d0' },
   };
 
   const c = colors[role] || colors.MEMBER;
@@ -152,7 +152,7 @@ export const RoleBadge: React.FC<{ role: Role }> = ({ role }) => {
         userSelect: 'none',
       }}
     >
-      {role}
+      {role === 'VIEWER' ? 'ANALYST' : role}
     </span>
   );
 };

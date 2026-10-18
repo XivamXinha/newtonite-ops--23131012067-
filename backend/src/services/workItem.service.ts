@@ -30,8 +30,8 @@ export class WorkItemService {
 
     const where: Prisma.WorkItemWhereInput = {};
 
-    // FR-12: Team isolation. Regular users only see their team. Admins see all or filter.
-    if (user.role !== Role.ADMIN) {
+    // FR-12: Team isolation. Regular users only see their team. Admins and Analysts/Viewers see all or filter.
+    if (user.role !== Role.ADMIN && user.role !== Role.VIEWER) {
       if (!user.teamId) {
         return {
           items: [],
@@ -129,7 +129,7 @@ export class WorkItemService {
     }
 
     // FR-12: Enforce team boundary
-    if (!canAccessTeam(user.role, user.teamId, item.teamId)) {
+    if (user.role !== Role.ADMIN && user.role !== Role.VIEWER && !canAccessTeam(user.role, user.teamId, item.teamId)) {
       const team = await prisma.team.findUnique({ where: { id: item.teamId } });
       const isLeadOrMember = team && (
         team.leadUserId === user.id ||

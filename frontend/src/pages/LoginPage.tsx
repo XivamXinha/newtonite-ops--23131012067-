@@ -4,7 +4,15 @@ import { useDemoUsersQuery } from '../hooks/useWorkItems';
 import { RoleBadge } from '../components/Badge';
 import { Shield, ArrowRight, Lock, Users } from 'lucide-react';
 
-const FALLBACK_DEMO_USERS = Array.from({ length: 20 }, (_, i) => {
+const DEDICATED_ANALYST_PERSONAS = [
+  { id: 'analyst-1', email: 'analyst1@gmail.com', name: 'Analyst 1 (Lead Operations Auditor)', role: 'VIEWER', teamName: 'System Auditor (Global)' },
+  { id: 'analyst-2', email: 'analyst2@gmail.com', name: 'Analyst 2 (Cross-Team Workflow Analyst)', role: 'VIEWER', teamName: 'System Auditor (Global)' },
+  { id: 'analyst-3', email: 'analyst3@gmail.com', name: 'Analyst 3 (Quality & SLA Reviewer)', role: 'VIEWER', teamName: 'System Auditor (Global)' },
+  { id: 'analyst-4', email: 'analyst4@gmail.com', name: 'Analyst 4 (SecOps & Risk Analyst)', role: 'VIEWER', teamName: 'System Auditor (Global)' },
+  { id: 'analyst-5', email: 'analyst5@gmail.com', name: 'Analyst 5 (Enterprise Governance Auditor)', role: 'VIEWER', teamName: 'System Auditor (Global)' },
+];
+
+const FALLBACK_EMPLOYEES = Array.from({ length: 20 }, (_, i) => {
   const num = i + 1;
   const email = `employ${num}@gmail.com`;
   let role: any = 'MEMBER';
@@ -20,16 +28,16 @@ const FALLBACK_DEMO_USERS = Array.from({ length: 20 }, (_, i) => {
     teamName = 'Engineering';
   } else if (num === 6) {
     role = 'LEAD';
-    teamName = 'DevOps';
+    teamName = 'DevOps & IT Support';
   } else if (num <= 10) {
     role = 'MEMBER';
-    teamName = 'DevOps';
+    teamName = 'DevOps & IT Support';
   } else if (num <= 14) {
     role = 'MEMBER';
-    teamName = 'Security';
+    teamName = 'Security Operations';
   } else {
-    role = 'VIEWER';
-    teamName = 'Operations';
+    role = 'MEMBER';
+    teamName = 'All Teams (Global)';
   }
   return {
     id: `fallback-${num}`,
@@ -40,6 +48,8 @@ const FALLBACK_DEMO_USERS = Array.from({ length: 20 }, (_, i) => {
   };
 });
 
+const FALLBACK_DEMO_USERS = [...DEDICATED_ANALYST_PERSONAS, ...FALLBACK_EMPLOYEES];
+
 export const LoginPage: React.FC = () => {
   const { login } = useAuth();
   const { data: demoUsers } = useDemoUsersQuery();
@@ -48,8 +58,18 @@ export const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('123456');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [personaFilter, setPersonaFilter] = useState<'ALL' | 'ANALYST' | 'ADMIN' | 'LEAD' | 'MEMBER'>('ALL');
 
   const activeDemoUsers = demoUsers && demoUsers.length > 0 ? demoUsers : FALLBACK_DEMO_USERS;
+
+  const filteredUsers = activeDemoUsers.filter((u: any) => {
+    if (personaFilter === 'ALL') return true;
+    if (personaFilter === 'ANALYST') return u.role === 'VIEWER';
+    if (personaFilter === 'ADMIN') return u.role === 'ADMIN';
+    if (personaFilter === 'LEAD') return u.role === 'LEAD';
+    if (personaFilter === 'MEMBER') return u.role === 'MEMBER';
+    return true;
+  });
 
   const handleManualLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,18 +153,49 @@ export const LoginPage: React.FC = () => {
         >
           {/* Left Column: Instant Demo User Switcher (FR-01) */}
           <div className="glass-card" style={{ padding: 28 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
               <Users size={20} color="#818cf8" />
               <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f172a' }}>
-                Instant Demo Access (20 Users)
+                Instant Demo Access ({activeDemoUsers.length} Users)
               </h2>
             </div>
-            <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', marginBottom: 20 }}>
-              Select any pre-seeded persona (<strong style={{ color: '#0f172a' }}>employ1 to employ20</strong>) to test permissions, approval workflows, and atomic claim concurrency:
+            <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', marginBottom: 14 }}>
+              Select any pre-seeded persona to test permissions, cross-team approvals, and full workflow auditing:
             </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 420, overflowY: 'auto', paddingRight: 6 }}>
-              {activeDemoUsers.map((u) => (
+            {/* Role Filter Tabs */}
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
+              {[
+                { id: 'ALL', label: `All (${activeDemoUsers.length})` },
+                { id: 'ANALYST', label: '📊 Analysts (5)' },
+                { id: 'ADMIN', label: '👑 Admin (1)' },
+                { id: 'LEAD', label: '⚡ Leads' },
+                { id: 'MEMBER', label: '👥 Members' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setPersonaFilter(tab.id as any)}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: 20,
+                    fontSize: '0.74rem',
+                    fontWeight: 700,
+                    border: '1px solid',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    backgroundColor: personaFilter === tab.id ? '#4f46e5' : '#f1f5f9',
+                    borderColor: personaFilter === tab.id ? '#4338ca' : '#e2e8f0',
+                    color: personaFilter === tab.id ? '#ffffff' : '#475569',
+                  }}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 400, overflowY: 'auto', paddingRight: 6 }}>
+              {filteredUsers.map((u) => (
                 <button
                   key={u.id}
                   type="button"
@@ -157,8 +208,8 @@ export const LoginPage: React.FC = () => {
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     textAlign: 'left',
-                    background: 'rgba(255, 255, 255, 0.03)',
-                    borderColor: 'rgba(255, 255, 255, 0.08)',
+                    background: u.role === 'VIEWER' ? '#ecfdf5' : 'rgba(255, 255, 255, 0.03)',
+                    borderColor: u.role === 'VIEWER' ? '#a7f3d0' : 'rgba(255, 255, 255, 0.08)',
                     borderRadius: 10,
                     cursor: 'pointer',
                   }}
@@ -174,7 +225,7 @@ export const LoginPage: React.FC = () => {
                       {u.teamName} &bull; <span className="font-mono">{u.email}</span>
                     </div>
                   </div>
-                  <ArrowRight size={16} color="#6366f1" />
+                  <ArrowRight size={16} color={u.role === 'VIEWER' ? '#059669' : '#6366f1'} />
                 </button>
               ))}
             </div>

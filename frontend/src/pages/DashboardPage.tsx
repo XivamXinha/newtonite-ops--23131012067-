@@ -37,6 +37,8 @@ import {
   XCircle,
   RotateCcw,
   Send,
+  BarChart3,
+  AlertCircle,
 } from 'lucide-react';
 
 type EmployeeTab =
@@ -47,7 +49,9 @@ type EmployeeTab =
   | 'awaiting-approval'
   | 'work-items'
   | 'my-team-leader'
-  | 'my-team-member';
+  | 'my-team-member'
+  | 'analytics-matrix'
+  | 'activity-audit';
 
 interface DashboardPageProps {
   onSelectItem: (id: string) => void;
@@ -55,11 +59,20 @@ interface DashboardPageProps {
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onSelectItem }) => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<EmployeeTab>('overview');
+  const [activeTab, setActiveTab] = useState<EmployeeTab>(() => {
+    return user?.role === 'VIEWER' ? 'analytics-matrix' : 'overview';
+  });
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [newTaskFilter, setNewTaskFilter] = useState<'ALL' | 'UNCLAIMED' | 'CLAIMED'>('ALL');
   const [newTaskTeamFilter, setNewTaskTeamFilter] = useState<string>('ALL');
+
+  // Viewer / Analyst governance filters
+  const [auditSearch, setAuditSearch] = useState('');
+  const [auditTeamFilter, setAuditTeamFilter] = useState('ALL');
+  const [auditClaimFilter, setAuditClaimFilter] = useState<'ALL' | 'CLAIMED' | 'UNCLAIMED'>('ALL');
+  const [auditStatusFilter, setAuditStatusFilter] = useState<string>('ALL');
+  const [activityActionFilter, setActivityActionFilter] = useState<string>('ALL');
 
   // Modals & action states
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -227,8 +240,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onSelectItem }) =>
   const queues = dashboardData?.queues;
   const leadTeam = dashboardData?.leadTeam;
   const memberTeam = dashboardData?.memberTeam;
-  const leadTeams: any[] = dashboardData?.leadTeams || (leadTeam ? [leadTeam] : []);
-  const memberTeams: any[] = dashboardData?.memberTeams || (memberTeam ? [memberTeam] : []);
+  const allTeamsList: any[] = dashboardData?.allTeams || [];
+  const isViewer = user?.role === 'VIEWER';
+  const leadTeams: any[] = isViewer ? [] : (dashboardData?.leadTeams || (leadTeam ? [leadTeam] : []));
+  const memberTeams: any[] = isViewer
+    ? allTeamsList
+    : (dashboardData?.memberTeams || (memberTeam ? [memberTeam] : []));
 
   const isUserLeadOrAdmin = user?.role === 'ADMIN' ||
     user?.role === 'LEAD' ||
@@ -266,8 +283,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onSelectItem }) =>
 
   const allNewTasks = (queues?.newTasks || []).filter(matchesSearch);
   const filteredNewTasks = allNewTasks.filter((item: WorkItem) => {
-    // If not Admin, strictly only show tasks belonging to this user's teams
-    if (user?.role !== 'ADMIN' && userTeamIds.length > 0 && !userTeamIds.includes(item.teamId)) {
+    // If not Admin or Viewer, strictly only show tasks belonging to this user's teams
+    if (user?.role !== 'ADMIN' && user?.role !== 'VIEWER' && userTeamIds.length > 0 && !userTeamIds.includes(item.teamId)) {
       return false;
     }
     if (newTaskFilter === 'UNCLAIMED' && item.assigneeId) return false;
@@ -277,7 +294,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onSelectItem }) =>
   });
   const unclaimedCount = filteredNewTasks.filter((t: any) => !t.assigneeId).length;
 
-  const navItems: { id: EmployeeTab; label: string; icon: React.ReactNode; badge?: number; badgeColor?: string }[] = [
+  const defaultNavItems: { id: EmployeeTab; label: string; icon: React.ReactNode; badge?: number; badgeColor?: string }[] = [
     { id: 'overview', label: 'E. Dashboard', icon: <LayoutDashboard size={18} /> },
     {
       id: 'new-tasks',
@@ -322,6 +339,37 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onSelectItem }) =>
       badgeColor: '#059669',
     },
   ];
+
+  const viewerNavItems: { id: EmployeeTab; label: string; icon: React.ReactNode; badge?: number; badgeColor?: string }[] = [
+    {
+      id: 'analytics-matrix',
+      label: 'Workflow & Claims Audit',
+      icon: <BarChart3 size={18} />,
+      badge: queues?.newTasks?.length || 0,
+      badgeColor: '#10b981',
+    },
+    {
+      id: 'activity-audit',
+      label: 'Decisions & Approval Trail',
+      icon: <History size={18} />,
+      badge: dashboardData?.teamActivities?.length || 0,
+      badgeColor: '#0ea5e9',
+    },
+    {
+      id: 'my-team-member',
+      label: 'All Squads & Rosters',
+      icon: <Users size={18} />,
+      badge: allTeamsList.length,
+      badgeColor: '#6366f1',
+    },
+    {
+      id: 'work-items',
+      label: 'Enterprise Task Explorer',
+      icon: <ListTodo size={18} />,
+    },
+  ];
+
+  const navItems = isViewer ? viewerNavItems : defaultNavItems;
 
   // Helper for computing team stats in My Team view
   const getTeamStats = (team: any) => {
@@ -2794,6 +2842,935 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onSelectItem }) =>
           </div>
         );
       })()}
+
+        {/* ================= VIEW 7: WORKFLOW & CLAIMS AUDIT (ANALYST MATRIX) ================= */}
+        {activeTab === 'analytics-matrix' && (() => {
+          const allAuditedItems: any[] = queues?.newTasks || [];
+          const activities: any[] = dashboardData?.teamActivities || [];
+
+          const totalWorkItems = allAuditedItems.length;
+          const totalSquads = allTeamsList.length;
+          const claimedItems = allAuditedItems.filter((i) => Boolean(i.assigneeId));
+          const unclaimedItems = allAuditedItems.filter((i) => !i.assigneeId);
+          const claimedCount = claimedItems.length;
+          const unclaimedCount = unclaimedItems.length;
+          const claimRate = totalWorkItems > 0 ? Math.round((claimedCount / totalWorkItems) * 100) : 0;
+
+          const approvedItems = allAuditedItems.filter((i) => i.status === 'RESOLVED' || i.status === 'CLOSED');
+          const inReviewItems = allAuditedItems.filter((i) => i.status === 'IN_REVIEW');
+
+          const getWorkItemAuditVerdict = (item: any) => {
+            const itemLogs = activities.filter((l: any) => l.workItemId === item.id);
+            const reworkLog = itemLogs.find((l: any) =>
+              l.action === 'CHANGES_REQUESTED_BY_LEAD' ||
+              l.action === 'REJECTED_BY_LEAD' ||
+              l.action === 'REJECTED_REWORK' ||
+              (typeof l.details === 'string' && (l.details.includes('CHANGES_REQUESTED') || l.details.includes('Revisions requested') || l.details.includes('rejected')))
+            );
+
+            const approvalLog = itemLogs.find((l: any) =>
+              l.action === 'APPROVED' ||
+              l.action === 'APPROVED_BY_ORIGIN_LEAD' ||
+              (typeof l.details === 'string' && l.details.includes('officially approved'))
+            );
+
+            if (item.status === 'RESOLVED' || item.status === 'CLOSED') {
+              return {
+                statusType: 'APPROVED' as const,
+                label: 'APPROVED & RESOLVED',
+                bg: '#ecfdf5',
+                border: '#a7f3d0',
+                text: '#047857',
+                icon: '✅',
+                remarks: approvalLog?.user?.name ? `Signed off by ${approvalLog.user.name}` : 'Approved by Squad Lead',
+              };
+            }
+
+            if (reworkLog && item.status === 'IN_PROGRESS') {
+              let remarkText = 'Lead requested revisions';
+              try {
+                const parsed = typeof reworkLog.details === 'string' ? JSON.parse(reworkLog.details) : reworkLog.details;
+                if (parsed?.comment) remarkText = parsed.comment;
+                else if (parsed?.message) remarkText = parsed.message;
+              } catch {
+                // fallback
+              }
+              return {
+                statusType: 'REWORK' as const,
+                label: 'REWORK / REJECTED',
+                bg: '#fff1f2',
+                border: '#fecdd3',
+                text: '#be123c',
+                icon: '⚠️',
+                remarks: remarkText,
+              };
+            }
+
+            if (item.status === 'IN_REVIEW') {
+              return {
+                statusType: 'IN_REVIEW' as const,
+                label: 'AWAITING APPROVAL',
+                bg: '#fef3c7',
+                border: '#fde68a',
+                text: '#b45309',
+                icon: '⏳',
+                remarks: 'Pending Lead inspection',
+              };
+            }
+
+            if (item.status === 'IN_PROGRESS') {
+              return {
+                statusType: 'IN_PROGRESS' as const,
+                label: 'WORK IN PROGRESS',
+                bg: '#eff6ff',
+                border: '#bfdbfe',
+                text: '#1d4ed8',
+                icon: '⚡',
+                remarks: 'Active member development',
+              };
+            }
+
+            return {
+              statusType: 'OPEN' as const,
+              label: item.assigneeId ? 'CLAIMED - READY' : 'READY TO CLAIM',
+              bg: '#f8fafc',
+              border: '#e2e8f0',
+              text: '#475569',
+              icon: '📥',
+              remarks: item.assigneeId ? 'Claimed by squad member' : 'Available in squad queue',
+            };
+          };
+
+          const reworkCount = allAuditedItems.filter((i) => getWorkItemAuditVerdict(i).statusType === 'REWORK').length;
+
+          const filteredAuditItems = allAuditedItems.filter((item: any) => {
+            if (auditSearch.trim()) {
+              const q = auditSearch.toLowerCase();
+              const match =
+                item.title?.toLowerCase().includes(q) ||
+                item.id?.toLowerCase().includes(q) ||
+                item.team?.name?.toLowerCase().includes(q) ||
+                item.reporter?.name?.toLowerCase().includes(q) ||
+                item.reporter?.email?.toLowerCase().includes(q) ||
+                item.assignee?.name?.toLowerCase().includes(q) ||
+                item.assignee?.email?.toLowerCase().includes(q);
+              if (!match) return false;
+            }
+
+            if (auditTeamFilter !== 'ALL' && item.teamId !== auditTeamFilter) {
+              return false;
+            }
+
+            if (auditClaimFilter === 'CLAIMED' && !item.assigneeId) return false;
+            if (auditClaimFilter === 'UNCLAIMED' && item.assigneeId) return false;
+
+            if (auditStatusFilter !== 'ALL') {
+              const verdict = getWorkItemAuditVerdict(item);
+              if (auditStatusFilter === 'APPROVED' && verdict.statusType !== 'APPROVED') return false;
+              if (auditStatusFilter === 'REWORK' && verdict.statusType !== 'REWORK') return false;
+              if (auditStatusFilter === 'IN_REVIEW' && verdict.statusType !== 'IN_REVIEW') return false;
+              if (auditStatusFilter === 'IN_PROGRESS' && verdict.statusType !== 'IN_PROGRESS') return false;
+              if (auditStatusFilter === 'OPEN' && verdict.statusType !== 'OPEN') return false;
+            }
+
+            return true;
+          });
+
+          return (
+            <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              {/* Header Banner */}
+              <div
+                style={{
+                  padding: '24px 28px',
+                  borderRadius: 14,
+                  background: 'linear-gradient(135deg, #04241d 0%, #064e3b 50%, #022c22 100%)',
+                  color: '#ffffff',
+                  boxShadow: '0 10px 30px rgba(6, 78, 59, 0.25)',
+                  border: '1px solid rgba(52, 211, 153, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: 16,
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: 6,
+                        backgroundColor: 'rgba(52, 211, 153, 0.2)',
+                        border: '1px solid rgba(52, 211, 153, 0.4)',
+                        color: '#6ee7b7',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.06em',
+                      }}
+                    >
+                      Dedicated Operations Analyst
+                    </span>
+                    <span style={{ color: 'rgba(255, 255, 255, 0.4)', fontSize: '0.8rem' }}>•</span>
+                    <span style={{ color: '#a7f3d0', fontSize: '0.8rem', fontWeight: 600 }}>
+                      Read-Only Workflow Governance
+                    </span>
+                  </div>
+                  <h1 style={{ fontSize: '1.65rem', fontWeight: 800, marginTop: 8, letterSpacing: '-0.02em', color: '#ffffff' }}>
+                    Enterprise Workflow & Claims Audit Console
+                  </h1>
+                  <p style={{ color: '#d1fae5', fontSize: '0.86rem', marginTop: 4, maxWidth: 720 }}>
+                    Inspect organizational structure, track which squad created each initiative, audit member claim ownership, and verify whether work was approved or returned for rework by Team Leads.
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => setActiveTab('activity-audit')}
+                    className="btn btn-sm"
+                    style={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      color: '#ffffff',
+                      gap: 6,
+                    }}
+                  >
+                    <History size={15} /> View Decisions Ledger
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('my-team-member')}
+                    className="btn btn-sm"
+                    style={{
+                      backgroundColor: '#10b981',
+                      border: '1px solid #34d399',
+                      color: '#ffffff',
+                      fontWeight: 700,
+                      gap: 6,
+                    }}
+                  >
+                    <Users size={15} /> All Squads ({totalSquads})
+                  </button>
+                </div>
+              </div>
+
+              {/* KPI Metrics Strip */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                  gap: 14,
+                }}
+              >
+                <div
+                  className="glass-card"
+                  style={{
+                    padding: '16px 18px',
+                    borderRadius: 12,
+                    borderTop: '3px solid #6366f1',
+                    background: '#ffffff',
+                  }}
+                >
+                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                    Active Squads
+                  </div>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', marginTop: 6 }}>
+                    {totalSquads}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#6366f1', marginTop: 4, fontWeight: 600 }}>
+                    Cross-functional teams
+                  </div>
+                </div>
+
+                <div
+                  className="glass-card"
+                  style={{
+                    padding: '16px 18px',
+                    borderRadius: 12,
+                    borderTop: '3px solid #0284c7',
+                    background: '#ffffff',
+                  }}
+                >
+                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                    Total Work Items
+                  </div>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0f172a', marginTop: 6 }}>
+                    {totalWorkItems}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#0284c7', marginTop: 4, fontWeight: 600 }}>
+                    Audited across org
+                  </div>
+                </div>
+
+                <div
+                  className="glass-card"
+                  style={{
+                    padding: '16px 18px',
+                    borderRadius: 12,
+                    borderTop: '3px solid #10b981',
+                    background: '#ffffff',
+                  }}
+                >
+                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                    Claimed Tasks
+                  </div>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#047857', marginTop: 6 }}>
+                    {claimedCount}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#059669', marginTop: 4, fontWeight: 600 }}>
+                    {claimRate}% claim adoption
+                  </div>
+                </div>
+
+                <div
+                  className="glass-card"
+                  style={{
+                    padding: '16px 18px',
+                    borderRadius: 12,
+                    borderTop: '3px solid #f59e0b',
+                    background: '#ffffff',
+                  }}
+                >
+                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                    Unclaimed Queue
+                  </div>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#b45309', marginTop: 6 }}>
+                    {unclaimedCount}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#d97706', marginTop: 4, fontWeight: 600 }}>
+                    Available for pick-up
+                  </div>
+                </div>
+
+                <div
+                  className="glass-card"
+                  style={{
+                    padding: '16px 18px',
+                    borderRadius: 12,
+                    borderTop: '3px solid #d97706',
+                    background: '#ffffff',
+                  }}
+                >
+                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                    Awaiting Approval
+                  </div>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#b45309', marginTop: 6 }}>
+                    {inReviewItems.length}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#d97706', marginTop: 4, fontWeight: 600 }}>
+                    In Lead review
+                  </div>
+                </div>
+
+                <div
+                  className="glass-card"
+                  style={{
+                    padding: '16px 18px',
+                    borderRadius: 12,
+                    borderTop: '3px solid #059669',
+                    background: '#ffffff',
+                  }}
+                >
+                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                    Approved by Lead
+                  </div>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#065f46', marginTop: 6 }}>
+                    {approvedItems.length}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#059669', marginTop: 4, fontWeight: 600 }}>
+                    Officially resolved
+                  </div>
+                </div>
+
+                <div
+                  className="glass-card"
+                  style={{
+                    padding: '16px 18px',
+                    borderRadius: 12,
+                    borderTop: '3px solid #e11d48',
+                    background: '#ffffff',
+                  }}
+                >
+                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                    Rework / Rejected
+                  </div>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#be123c', marginTop: 6 }}>
+                    {reworkCount}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#e11d48', marginTop: 4, fontWeight: 600 }}>
+                    Returned for changes
+                  </div>
+                </div>
+              </div>
+
+              {/* Filters and Controls */}
+              <div
+                className="glass-card"
+                style={{
+                  padding: '16px 20px',
+                  borderRadius: 12,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 14,
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                  {/* Search box */}
+                  <div style={{ position: 'relative', flex: '1 1 280px', minWidth: 260 }}>
+                    <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                    <input
+                      type="text"
+                      className="input input-sm"
+                      placeholder="Search title, ID, squad, creator, or claim owner..."
+                      value={auditSearch}
+                      onChange={(e) => setAuditSearch(e.target.value)}
+                      style={{ paddingLeft: 36, width: '100%', borderRadius: 8 }}
+                    />
+                  </div>
+
+                  {/* Team Filter */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Squad:</span>
+                    <select
+                      className="input input-sm"
+                      value={auditTeamFilter}
+                      onChange={(e) => setAuditTeamFilter(e.target.value)}
+                      style={{ borderRadius: 8, padding: '6px 10px', fontSize: '0.8rem', minWidth: 150 }}
+                    >
+                      <option value="ALL">All Squads ({totalSquads})</option>
+                      {allTeamsList.map((t: any) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Claim Status Filter */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Claim:</span>
+                    <div style={{ display: 'inline-flex', backgroundColor: '#f1f5f9', padding: 2, borderRadius: 8 }}>
+                      {(['ALL', 'CLAIMED', 'UNCLAIMED'] as const).map((filterVal) => (
+                        <button
+                          key={filterVal}
+                          onClick={() => setAuditClaimFilter(filterVal)}
+                          style={{
+                            padding: '4px 10px',
+                            borderRadius: 6,
+                            fontSize: '0.74rem',
+                            fontWeight: auditClaimFilter === filterVal ? 700 : 500,
+                            backgroundColor: auditClaimFilter === filterVal ? '#ffffff' : 'transparent',
+                            color: auditClaimFilter === filterVal ? '#0f172a' : '#64748b',
+                            boxShadow: auditClaimFilter === filterVal ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {filterVal}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Governance Decision Filter */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Decision:</span>
+                    <select
+                      className="input input-sm"
+                      value={auditStatusFilter}
+                      onChange={(e) => setAuditStatusFilter(e.target.value)}
+                      style={{ borderRadius: 8, padding: '6px 10px', fontSize: '0.8rem', minWidth: 160 }}
+                    >
+                      <option value="ALL">All Governance States</option>
+                      <option value="APPROVED">✅ Approved & Resolved</option>
+                      <option value="REWORK">⚠️ Rework / Rejected</option>
+                      <option value="IN_REVIEW">⏳ Awaiting Lead Sign-off</option>
+                      <option value="IN_PROGRESS">⚡ Work In Progress</option>
+                      <option value="OPEN">📥 Ready to Claim</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Filter Summary & Result Count */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.76rem', color: '#64748b', paddingTop: 6, borderTop: '1px solid #f1f5f9' }}>
+                  <span>
+                    Showing <strong>{filteredAuditItems.length}</strong> of <strong>{totalWorkItems}</strong> total work items audited
+                  </span>
+                  {(auditSearch || auditTeamFilter !== 'ALL' || auditClaimFilter !== 'ALL' || auditStatusFilter !== 'ALL') && (
+                    <button
+                      onClick={() => {
+                        setAuditSearch('');
+                        setAuditTeamFilter('ALL');
+                        setAuditClaimFilter('ALL');
+                        setAuditStatusFilter('ALL');
+                      }}
+                      className="btn btn-sm"
+                      style={{ padding: '2px 8px', fontSize: '0.72rem', color: '#dc2626' }}
+                    >
+                      Reset Filters
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Master Audit Table */}
+              <div
+                className="glass-card"
+                style={{
+                  borderRadius: 14,
+                  overflow: 'hidden',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
+                }}
+              >
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
+                    <thead>
+                      <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        <th style={{ padding: '14px 16px', fontWeight: 700 }}>Task & Priority</th>
+                        <th style={{ padding: '14px 16px', fontWeight: 700 }}>Created By (Team & Creator)</th>
+                        <th style={{ padding: '14px 16px', fontWeight: 700 }}>Claim Ownership</th>
+                        <th style={{ padding: '14px 16px', fontWeight: 700 }}>Status</th>
+                        <th style={{ padding: '14px 16px', fontWeight: 700 }}>Approval / Rework Verdict</th>
+                        <th style={{ padding: '14px 16px', fontWeight: 700, textAlign: 'right' }}>Audit Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredAuditItems.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} style={{ padding: 48, textAlign: 'center', color: '#64748b' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                              <AlertCircle size={32} color="#94a3b8" />
+                              <div style={{ fontWeight: 600, color: '#334155' }}>No work items match the selected audit criteria</div>
+                              <div style={{ fontSize: '0.78rem' }}>Try clearing your search term or switching filter options above.</div>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredAuditItems.map((item: any) => {
+                          const verdict = getWorkItemAuditVerdict(item);
+                          const isClaimed = Boolean(item.assigneeId);
+
+                          return (
+                            <tr
+                              key={item.id}
+                              style={{
+                                borderBottom: '1px solid #f1f5f9',
+                                transition: 'background-color 0.15s ease',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#f8fafc';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '#ffffff';
+                              }}
+                            >
+                              {/* Task and Priority */}
+                              <td style={{ padding: '14px 16px', maxWidth: 280 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <PriorityBadge priority={item.priority} />
+                                  <TypeBadge type={item.type} />
+                                </div>
+                                <div
+                                  style={{
+                                    fontWeight: 700,
+                                    color: '#0f172a',
+                                    fontSize: '0.88rem',
+                                    marginTop: 4,
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                  }}
+                                  title={item.title}
+                                >
+                                  {item.title}
+                                </div>
+                                <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: 2, fontFamily: 'var(--font-mono)' }}>
+                                  ID: {item.id.slice(0, 14)}... • v{item.version}
+                                </div>
+                              </td>
+
+                              {/* Created By: Team & Creator */}
+                              <td style={{ padding: '14px 16px' }}>
+                                <div
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    padding: '3px 8px',
+                                    borderRadius: 6,
+                                    backgroundColor: '#eef2ff',
+                                    color: '#4338ca',
+                                    fontSize: '0.74rem',
+                                    fontWeight: 700,
+                                    border: '1px solid #c7d2fe',
+                                  }}
+                                >
+                                  🏢 {item.team?.name || 'Squad ' + item.teamId.slice(0, 8)}
+                                </div>
+                                <div style={{ marginTop: 4, fontSize: '0.80rem', fontWeight: 600, color: '#334155' }}>
+                                  {item.reporter?.name || 'System / Lead'}
+                                </div>
+                                <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                                  {item.reporter?.email || 'N/A'}
+                                </div>
+                              </td>
+
+                              {/* Claim Ownership (Kisne claim kiya) */}
+                              <td style={{ padding: '14px 16px' }}>
+                                {isClaimed ? (
+                                  <div>
+                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                      <div
+                                        style={{
+                                          width: 22,
+                                          height: 22,
+                                          borderRadius: '50%',
+                                          backgroundColor: '#059669',
+                                          color: '#ffffff',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          fontSize: '0.68rem',
+                                          fontWeight: 800,
+                                        }}
+                                      >
+                                        {(item.assignee?.name || 'U').charAt(0).toUpperCase()}
+                                      </div>
+                                      <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.82rem' }}>
+                                        {item.assignee?.name || 'Assigned Member'}
+                                      </span>
+                                    </div>
+                                    <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: 2 }}>
+                                      {item.assignee?.email}
+                                    </div>
+                                    <span
+                                      style={{
+                                        display: 'inline-block',
+                                        marginTop: 4,
+                                        fontSize: '0.66rem',
+                                        fontWeight: 700,
+                                        padding: '1px 6px',
+                                        borderRadius: 4,
+                                        backgroundColor: '#ecfdf5',
+                                        color: '#047857',
+                                        border: '1px solid #a7f3d0',
+                                      }}
+                                    >
+                                      ✓ CLAIMED
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div>
+                                    <span
+                                      style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 4,
+                                        fontSize: '0.72rem',
+                                        fontWeight: 700,
+                                        padding: '3px 8px',
+                                        borderRadius: 6,
+                                        backgroundColor: '#fffbeb',
+                                        color: '#b45309',
+                                        border: '1px solid #fde68a',
+                                      }}
+                                    >
+                                      ⏳ UNCLAIMED
+                                    </span>
+                                    <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: 3 }}>
+                                      Pending in team queue
+                                    </div>
+                                  </div>
+                                )}
+                              </td>
+
+                              {/* Lifecycle Status */}
+                              <td style={{ padding: '14px 16px' }}>
+                                <StatusBadge status={item.status} />
+                              </td>
+
+                              {/* Approval / Rework Verdict */}
+                              <td style={{ padding: '14px 16px', maxWidth: 260 }}>
+                                <div
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 5,
+                                    padding: '3px 9px',
+                                    borderRadius: 6,
+                                    backgroundColor: verdict.bg,
+                                    border: `1px solid ${verdict.border}`,
+                                    color: verdict.text,
+                                    fontSize: '0.72rem',
+                                    fontWeight: 800,
+                                    letterSpacing: '0.02em',
+                                  }}
+                                >
+                                  <span>{verdict.icon}</span>
+                                  <span>{verdict.label}</span>
+                                </div>
+                                <div
+                                  style={{
+                                    marginTop: 4,
+                                    fontSize: '0.74rem',
+                                    color: verdict.statusType === 'REWORK' ? '#b91c1c' : '#64748b',
+                                    fontWeight: verdict.statusType === 'REWORK' ? 600 : 400,
+                                    fontStyle: verdict.statusType === 'REWORK' ? 'italic' : 'normal',
+                                  }}
+                                  title={verdict.remarks}
+                                >
+                                  {verdict.remarks}
+                                </div>
+                              </td>
+
+                              {/* Audit Action Button */}
+                              <td style={{ padding: '14px 16px', textAlign: 'right' }}>
+                                <button
+                                  onClick={() => handleSelectItem(item)}
+                                  className="btn btn-sm"
+                                  style={{
+                                    padding: '6px 12px',
+                                    borderRadius: 6,
+                                    backgroundColor: '#f1f5f9',
+                                    border: '1px solid #cbd5e1',
+                                    color: '#0f172a',
+                                    fontSize: '0.76rem',
+                                    fontWeight: 600,
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#10b981';
+                                    e.currentTarget.style.borderColor = '#059669';
+                                    e.currentTarget.style.color = '#ffffff';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#f1f5f9';
+                                    e.currentTarget.style.borderColor = '#cbd5e1';
+                                    e.currentTarget.style.color = '#0f172a';
+                                  }}
+                                >
+                                  Inspect Details →
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ================= VIEW 8: DECISIONS & APPROVAL TRAIL (ACTIVITY AUDIT) ================= */}
+        {activeTab === 'activity-audit' && (() => {
+          const activities: any[] = dashboardData?.teamActivities || [];
+
+          const filteredActivities = activities.filter((act: any) => {
+            if (activityActionFilter === 'ALL') return true;
+            if (activityActionFilter === 'APPROVED') {
+              return act.action === 'APPROVED' || act.action === 'APPROVED_BY_ORIGIN_LEAD';
+            }
+            if (activityActionFilter === 'REWORK') {
+              return act.action === 'CHANGES_REQUESTED_BY_LEAD' || act.action === 'REJECTED_BY_LEAD' || act.action === 'REJECTED_REWORK';
+            }
+            if (activityActionFilter === 'CLAIMED') {
+              return act.action === 'CLAIMED';
+            }
+            if (activityActionFilter === 'SUBMITTED') {
+              return act.action === 'SUBMITTED_FOR_APPROVAL' || act.action === 'CROSS_TEAM_REQUEST_SUBMITTED';
+            }
+            return true;
+          });
+
+          return (
+            <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+                <div>
+                  <h2 style={{ fontSize: '1.45rem', fontWeight: 800, color: '#0f172a' }}>
+                    Decisions & Governance Activity Trail
+                  </h2>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.86rem' }}>
+                    Immutable historical ledger of every task creation, member claim, lead sign-off, and rework request across all teams.
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Filter Decision:</span>
+                  <select
+                    className="input input-sm"
+                    value={activityActionFilter}
+                    onChange={(e) => setActivityActionFilter(e.target.value)}
+                    style={{ borderRadius: 8, padding: '6px 12px', fontSize: '0.8rem', minWidth: 170 }}
+                  >
+                    <option value="ALL">All Actions ({activities.length})</option>
+                    <option value="APPROVED">✅ Approvals Only</option>
+                    <option value="REWORK">⚠️ Rework / Rejections Only</option>
+                    <option value="CLAIMED">👤 Task Claims Only</option>
+                    <option value="SUBMITTED">⏳ Submissions for Review</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Activity Timeline List */}
+              <div
+                className="glass-card"
+                style={{
+                  borderRadius: 14,
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  padding: '20px 24px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 16,
+                }}
+              >
+                {filteredActivities.length === 0 ? (
+                  <div style={{ padding: 40, textAlign: 'center', color: '#64748b' }}>
+                    No activity logs recorded under this filter.
+                  </div>
+                ) : (
+                  filteredActivities.map((act: any, idx: number) => {
+                    const isApproval = act.action === 'APPROVED' || act.action === 'APPROVED_BY_ORIGIN_LEAD';
+                    const isRework = act.action === 'CHANGES_REQUESTED_BY_LEAD' || act.action === 'REJECTED_BY_LEAD' || act.action === 'REJECTED_REWORK';
+                    const isClaimed = act.action === 'CLAIMED';
+                    const isSubmitted = act.action === 'SUBMITTED_FOR_APPROVAL';
+
+                    let parsedDetails: any = null;
+                    try {
+                      parsedDetails = typeof act.details === 'string' ? JSON.parse(act.details) : act.details;
+                    } catch {
+                      parsedDetails = null;
+                    }
+
+                    return (
+                      <div
+                        key={act.id || idx}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          justifyContent: 'space-between',
+                          gap: 16,
+                          padding: '12px 16px',
+                          borderRadius: 10,
+                          backgroundColor: isRework ? '#fff1f2' : isApproval ? '#ecfdf5' : '#f8fafc',
+                          border: isRework ? '1px solid #fecdd3' : isApproval ? '1px solid #a7f3d0' : '1px solid #f1f5f9',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                          {/* Actor Avatar */}
+                          <div
+                            style={{
+                              width: 34,
+                              height: 34,
+                              borderRadius: '50%',
+                              backgroundColor: isApproval ? '#059669' : isRework ? '#be123c' : isClaimed ? '#4f46e5' : '#0284c7',
+                              color: '#ffffff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '0.80rem',
+                              fontWeight: 800,
+                              flexShrink: 0,
+                            }}
+                          >
+                            {(act.user?.name || 'U').charAt(0).toUpperCase()}
+                          </div>
+
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                              <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.86rem' }}>
+                                {act.user?.name || 'System User'}
+                              </span>
+                              <RoleBadge role={act.user?.role || 'MEMBER'} />
+
+                              {/* Action Tag */}
+                              {isApproval && (
+                                <span style={{ fontSize: '0.70rem', fontWeight: 800, padding: '2px 8px', borderRadius: 4, backgroundColor: '#d1fae5', color: '#065f46' }}>
+                                  ✓ APPROVED & RESOLVED
+                                </span>
+                              )}
+                              {isRework && (
+                                <span style={{ fontSize: '0.70rem', fontWeight: 800, padding: '2px 8px', borderRadius: 4, backgroundColor: '#ffe4e6', color: '#9f1239' }}>
+                                  ⚠️ REVISIONS / REJECTED
+                                </span>
+                              )}
+                              {isClaimed && (
+                                <span style={{ fontSize: '0.70rem', fontWeight: 800, padding: '2px 8px', borderRadius: 4, backgroundColor: '#e0e7ff', color: '#3730a3' }}>
+                                  👤 CLAIMED TASK
+                                </span>
+                              )}
+                              {isSubmitted && (
+                                <span style={{ fontSize: '0.70rem', fontWeight: 800, padding: '2px 8px', borderRadius: 4, backgroundColor: '#fef3c7', color: '#92400e' }}>
+                                  ⏳ SUBMITTED FOR REVIEW
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Work item reference */}
+                            <div style={{ marginTop: 6, fontSize: '0.82rem', color: '#334155' }}>
+                              Target Work Item:{' '}
+                              <strong style={{ color: '#0f172a' }}>"{act.workItem?.title || 'Operational Work Item'}"</strong>
+                              {act.workItem?.team?.name && (
+                                <span style={{ marginLeft: 6, color: '#6366f1', fontSize: '0.76rem', fontWeight: 600 }}>
+                                  [{act.workItem.team.name}]
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Remarks Comment if available */}
+                            {parsedDetails && (parsedDetails.comment || parsedDetails.message) && (
+                              <div
+                                style={{
+                                  marginTop: 6,
+                                  fontSize: '0.78rem',
+                                  color: '#334155',
+                                  backgroundColor: '#ffffff',
+                                  padding: '6px 12px',
+                                  borderRadius: 6,
+                                  border: '1px solid #e2e8f0',
+                                  fontStyle: 'italic',
+                                }}
+                              >
+                                "{parsedDetails.comment || parsedDetails.message}"
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Timestamp & Inspect */}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+                          <span style={{ fontSize: '0.72rem', color: '#64748b', fontFamily: 'var(--font-mono)' }}>
+                            {new Date(act.createdAt).toLocaleString([], {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                          {act.workItem && (
+                            <button
+                              onClick={() => handleSelectItem(act.workItem)}
+                              className="btn btn-sm"
+                              style={{ padding: '3px 8px', fontSize: '0.72rem' }}
+                            >
+                              Inspect Item
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          );
+        })()}
       </section>
 
       {/* Create Work Item Modal */}

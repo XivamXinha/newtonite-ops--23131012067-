@@ -45,7 +45,9 @@ export class DashboardService {
       ...memberTeamIds,
     ]));
 
-    const teamFilter: Prisma.WorkItemWhereInput = effectiveRole === Role.ADMIN
+    const isGlobalAuditor = effectiveRole === Role.ADMIN || effectiveRole === Role.VIEWER;
+
+    const teamFilter: Prisma.WorkItemWhereInput = isGlobalAuditor
       ? {}
       : allUserTeamIds.length > 0
         ? { teamId: { in: allUserTeamIds } }
@@ -83,8 +85,8 @@ export class DashboardService {
 
     // 3. Awaiting My Approval (Items in IN_REVIEW status)
     // Destination Team Leads see cross-team task requests sent to their teams!
-    const isLeadOrAdmin = effectiveRole === Role.ADMIN || leadTeams.length > 0 || effectiveRole === Role.LEAD;
-    const approvalTeamFilter = effectiveRole === Role.ADMIN
+    const isLeadOrAdmin = isGlobalAuditor || leadTeams.length > 0 || effectiveRole === Role.LEAD;
+    const approvalTeamFilter = isGlobalAuditor
       ? {}
       : leadTeamIds.length > 0
         ? { teamId: { in: leadTeamIds } }
@@ -167,7 +169,7 @@ export class DashboardService {
 
     // 5. Team Activity Log (timeline of all activities in the user's squads and user's cross-team initiatives)
     const teamActivities = await prisma.activityLog.findMany({
-      where: effectiveRole === Role.ADMIN
+      where: isGlobalAuditor
         ? {}
         : {
             OR: [
@@ -177,7 +179,7 @@ export class DashboardService {
             ],
           },
       orderBy: [{ createdAt: 'desc' }],
-      take: 80,
+      take: 120,
       include: {
         user: { select: { id: true, name: true, email: true, role: true } },
         workItem: {
@@ -189,6 +191,8 @@ export class DashboardService {
             reporterId: true,
             assigneeId: true,
             team: { select: { id: true, name: true } },
+            assignee: { select: { id: true, name: true, email: true, role: true } },
+            reporter: { select: { id: true, name: true, email: true, role: true } },
           },
         },
       },

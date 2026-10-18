@@ -68,10 +68,36 @@ async function main() {
 
   console.log('✅ 20 Employee users seeded (employ1@gmail.com to employ20@gmail.com with password 123456)');
 
+  // 3b. Create 5 Dedicated Viewer / Analyst Users (analyst1@gmail.com to analyst5@gmail.com)
+  const analystTitles = [
+    'Analyst 1 (Lead Operations Auditor)',
+    'Analyst 2 (Cross-Team Workflow Analyst)',
+    'Analyst 3 (Quality & SLA Reviewer)',
+    'Analyst 4 (SecOps & Risk Analyst)',
+    'Analyst 5 (Enterprise Governance Auditor)',
+  ];
+
+  for (let i = 1; i <= 5; i++) {
+    const email = `analyst${i}@gmail.com`;
+    const u = await prisma.user.create({
+      data: {
+        email,
+        name: analystTitles[i - 1],
+        role: Role.VIEWER,
+        teamId: null, // Global visibility across all teams
+        passwordHash: defaultPasswordHash,
+      },
+    });
+    createdUsers[`analyst${i}`] = u;
+  }
+  console.log('✅ 5 Dedicated Viewer/Analyst users seeded (analyst1@gmail.com to analyst5@gmail.com with password 123456)');
+
   const employ1 = createdUsers['employ1'];
   const employ2 = createdUsers['employ2'];
   const employ6 = createdUsers['employ6'];
   const employ7 = createdUsers['employ7'];
+  const employ11 = createdUsers['employ11'];
+  const employ12 = createdUsers['employ12'];
   const employ20 = createdUsers['employ20'];
 
   // 4. Create Work Items
@@ -228,6 +254,56 @@ async function main() {
       assigneeId: employ1.id,
       dueDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
       version: 3,
+    },
+  });
+
+  // Item 8: Approved by Lead (Security)
+  const item8 = await prisma.workItem.create({
+    data: {
+      title: 'Periodic IAM Permission Audit and Excess Privilege Deprovisioning',
+      description: 'Quarterly review of administrative roles and MFA compliance on cloud provider console.',
+      type: WorkItemType.TASK,
+      priority: Priority.HIGH,
+      status: Status.RESOLVED,
+      teamId: securityTeam.id,
+      reporterId: employ11.id,
+      assigneeId: employ12.id,
+      dueDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+      version: 3,
+    },
+  });
+
+  await prisma.activityLog.create({
+    data: {
+      workItemId: item8.id,
+      userId: employ11.id,
+      action: 'STATUS_CHANGE',
+      details: JSON.stringify({ from: 'IN_REVIEW', to: 'RESOLVED', decision: 'APPROVED', remarks: 'IAM policies validated against least-privilege matrix.' }),
+    },
+  });
+
+  // Item 9: Rejected / Rework Requested by Lead (Engineering)
+  const item9 = await prisma.workItem.create({
+    data: {
+      title: 'Database connection retry backoff algorithm tuning',
+      description: 'Exponential backoff jitter implementation for high-concurrency payment microservices.',
+      type: WorkItemType.TASK,
+      priority: Priority.MEDIUM,
+      status: Status.IN_PROGRESS,
+      teamId: engTeam.id,
+      reporterId: employ1.id,
+      assigneeId: employ2.id,
+      dueDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000),
+      version: 3,
+    },
+  });
+
+  await prisma.activityLog.create({
+    data: {
+      workItemId: item9.id,
+      userId: employ1.id,
+      action: 'STATUS_CHANGE',
+      details: JSON.stringify({ from: 'IN_REVIEW', to: 'IN_PROGRESS', decision: 'REJECTED_REWORK', remarks: 'Unit tests for connection timeout corner cases are missing. Please add tests before resubmitting.' }),
     },
   });
 
