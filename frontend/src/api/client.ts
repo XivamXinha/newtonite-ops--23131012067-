@@ -16,7 +16,10 @@ export class ConflictApiError extends ApiError {
     this.name = 'ConflictApiError';
   }
 }
-const rawApiUrl = (import.meta as any).env?.VITE_API_URL;
+const isDev = (import.meta as any).env?.DEV;
+const rawApiUrl =
+  (import.meta as any).env?.VITE_API_URL ||
+  (isDev ? '' : 'https://newtonite-backendd.onrender.com');
 const BASE_URL = rawApiUrl ? `${rawApiUrl.replace(/\/$/, '')}/api` : '/api';
 
 export async function apiRequest<T = any>(
