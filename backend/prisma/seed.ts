@@ -43,42 +43,20 @@ async function main() {
 
   for (let i = 1; i <= 20; i++) {
     const email = `employ${i}@gmail.com`;
-    let role = Role.MEMBER;
-    let targetTeamId: string | null = engTeam.id;
-
-    if (i === 1) {
-      role = Role.LEAD;
-      targetTeamId = engTeam.id;
-    } else if (i <= 5) {
-      role = i === 5 ? Role.VIEWER : Role.MEMBER;
-      targetTeamId = engTeam.id;
-    } else if (i === 6) {
-      role = Role.LEAD;
-      targetTeamId = devopsTeam.id;
-    } else if (i <= 10) {
-      role = i === 10 ? Role.VIEWER : Role.MEMBER;
-      targetTeamId = devopsTeam.id;
-    } else if (i === 11) {
-      role = Role.LEAD;
-      targetTeamId = securityTeam.id;
-    } else if (i <= 15) {
-      role = i === 15 ? Role.VIEWER : Role.MEMBER;
-      targetTeamId = securityTeam.id;
-    } else if (i <= 18) {
-      role = Role.MEMBER;
-      targetTeamId = i === 16 ? engTeam.id : i === 17 ? devopsTeam.id : securityTeam.id;
-    } else if (i === 19) {
-      role = Role.LEAD;
-      targetTeamId = engTeam.id;
-    } else if (i === 20) {
-      role = Role.ADMIN;
-      targetTeamId = null; // Global Admin
+    const isAdmin = i === 20;
+    const role = isAdmin ? Role.ADMIN : Role.MEMBER;
+    let targetTeamId: string | null = null;
+    if (!isAdmin) {
+      if (i <= 5) targetTeamId = engTeam.id;
+      else if (i <= 10) targetTeamId = devopsTeam.id;
+      else if (i <= 14) targetTeamId = securityTeam.id;
+      else targetTeamId = null; // employ15 to employ19 unassigned
     }
 
     const u = await prisma.user.create({
       data: {
         email,
-        name: `Employee ${i}${role === Role.ADMIN ? ' (Admin)' : role === Role.LEAD ? ' (Lead)' : role === Role.VIEWER ? ' (Viewer)' : ''}`,
+        name: isAdmin ? `Employee 20 (Admin)` : `Employee ${i}`,
         role,
         teamId: targetTeamId,
         passwordHash: defaultPasswordHash,

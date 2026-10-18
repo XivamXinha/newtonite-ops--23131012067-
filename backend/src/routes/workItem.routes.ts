@@ -28,4 +28,7 @@ router.post('/:id/transition', WorkItemController.transitionStatus);
 // Add comment
 router.post('/:id/comments', WorkItemController.addComment);
 
+// Delete work item (creator or admin only)
+router.delete('/:id', WorkItemController.delete);
+
 export default router;

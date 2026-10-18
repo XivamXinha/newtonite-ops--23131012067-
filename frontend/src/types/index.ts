@@ -10,12 +10,26 @@ export interface AuthUser {
   role: Role;
   teamId: string | null;
   teamName?: string | null;
+  leadTeam?: { id: string; name: string; description?: string | null } | null;
+  memberTeam?: { id: string; name: string; description?: string | null } | null;
+  leadTeams?: Array<{ id: string; name: string; description?: string | null }>;
+  memberTeams?: Array<{ id: string; name: string; description?: string | null }>;
+  leadTeamIds?: string[];
+  isLead?: boolean;
+  assignedRoles?: Array<{
+    role: Role;
+    label: string;
+    teamName: string | null;
+    teamId: string | null;
+    isAssigned: boolean;
+  }>;
 }
 
 export interface Team {
   id: string;
   name: string;
   description?: string;
+  leadUserId?: string | null;
 }
 
 export interface ActivityLog {
@@ -56,9 +70,16 @@ export interface WorkItem {
   priority: Priority;
   status: Status;
   teamId: string;
+  targetTeamId?: string | null;
+  targetTeam?: {
+    id: string;
+    name: string;
+    description?: string;
+  } | null;
   team: {
     id: string;
     name: string;
+    leadUserId?: string | null;
   };
   reporterId: string;
   reporter: {
@@ -100,10 +121,21 @@ export interface DashboardData {
     totalUrgent: number;
     totalCompleted: number;
     assignedToMeCount: number;
+    unclaimedNewTasksCount?: number;
   };
   queues: {
     assignedToMe: WorkItem[];
     unassignedUrgent: WorkItem[];
     awaitingMyApproval: WorkItem[];
+    newTasks?: WorkItem[];
   };
+  teamActivities?: any[];
+  allTeams?: any[];
+  myTeam?: any | null;
+  leadTeam?: any | null;
+  memberTeam?: any | null;
+  leadTeams?: any[];
+  memberTeams?: any[];
+  userRole?: string;
+  userTeamId?: string | null;
 }

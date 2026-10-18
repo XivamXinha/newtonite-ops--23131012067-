@@ -87,14 +87,18 @@ export const useTransitionMutation = () => {
       id,
       targetStatus,
       version,
+      claimForSelf,
+      comment,
     }: {
       id: string;
       targetStatus: Status;
       version: number;
+      claimForSelf?: boolean;
+      comment?: string;
     }) => {
       const res = await apiRequest(`/work-items/${id}/transition`, {
         method: 'POST',
-        body: JSON.stringify({ targetStatus, version }),
+        body: JSON.stringify({ targetStatus, version, claimForSelf, comment }),
       });
       return res.data;
     },
@@ -156,6 +160,22 @@ export const useAddCommentMutation = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['workItem', variables.id] });
+    },
+  });
+};
+
+export const useDeleteWorkItemMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest(`/work-items/${id}`, {
+        method: 'DELETE',
+      });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['workItems'] });
     },
   });
 };

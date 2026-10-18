@@ -8,6 +8,19 @@ export interface AuthUser {
   role: Role;
   teamId: string | null;
   teamName?: string | null;
+  leadTeam?: { id: string; name: string; description?: string | null } | null;
+  memberTeam?: { id: string; name: string; description?: string | null } | null;
+  leadTeams?: Array<{ id: string; name: string; description?: string | null }>;
+  memberTeams?: Array<{ id: string; name: string; description?: string | null }>;
+  leadTeamIds?: string[];
+  isLead?: boolean;
+  assignedRoles?: Array<{
+    role: Role;
+    label: string;
+    teamName: string | null;
+    teamId: string | null;
+    isAssigned: boolean;
+  }>;
 }
 
 export interface AuthenticatedRequest extends Request {
@@ -20,6 +33,7 @@ export interface CreateWorkItemInput {
   type: WorkItemType;
   priority: Priority;
   teamId: string;
+  targetTeamId?: string | null;
   assigneeId?: string | null;
   dueDate?: string | null;
 }

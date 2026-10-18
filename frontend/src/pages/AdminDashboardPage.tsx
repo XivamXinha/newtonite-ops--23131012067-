@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import { StatusBadge, PriorityBadge, RoleBadge, TypeBadge } from '../components/Badge';
 import { Modal } from '../components/Modal';
 import {
@@ -19,6 +20,11 @@ import {
   Eye,
   Crown,
   ListTodo,
+  PanelLeftClose,
+  PanelLeftOpen,
+  UserCheck,
+  Search,
+  Trash2,
 } from 'lucide-react';
 
 type AdminTab =
@@ -35,13 +41,18 @@ interface AdminDashboardPageProps {
 }
 
 export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onSelectItem }) => {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<AdminTab>('manage-team');
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Modals state
   const [isNewTeamModalOpen, setIsNewTeamModalOpen] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
   const [newTeamDesc, setNewTeamDesc] = useState('');
+  const [newTeamLeadId, setNewTeamLeadId] = useState('');
+  const [newTeamMemberIds, setNewTeamMemberIds] = useState<string[]>([]);
+  const [memberSearchTerm, setMemberSearchTerm] = useState('');
 
   const [selectedUserForEdit, setSelectedUserForEdit] = useState<any | null>(null);
   const [editRole, setEditRole] = useState('MEMBER');
@@ -93,7 +104,12 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onSelect
 
   // Mutations
   const createTeamMutation = useMutation({
-    mutationFn: async (payload: { name: string; description?: string }) => {
+    mutationFn: async (payload: {
+      name: string;
+      description?: string;
+      leadUserId?: string;
+      memberUserIds?: string[];
+    }) => {
       const res = await apiRequest('/admin/teams', {
         method: 'POST',
         body: JSON.stringify(payload),
@@ -102,9 +118,13 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onSelect
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-teams'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       setIsNewTeamModalOpen(false);
       setNewTeamName('');
       setNewTeamDesc('');
+      setNewTeamLeadId('');
+      setNewTeamMemberIds([]);
+      setMemberSearchTerm('');
     },
   });
 
@@ -122,6 +142,31 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onSelect
       setSelectedUserForEdit(null);
     },
   });
+
+  const deleteTeamMutation = useMutation({
+    mutationFn: async (teamId: string) => {
+      const res = await apiRequest(`/admin/teams/${teamId}`, {
+        method: 'DELETE',
+      });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-teams'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+
+  const handleDeleteTeam = async (teamId: string, teamName: string) => {
+    if (!window.confirm(`Are you sure you want to drop and delete team "${teamName}"? All users will be detached from this team.`)) {
+      return;
+    }
+    try {
+      await deleteTeamMutation.mutateAsync(teamId);
+    } catch (err: any) {
+      alert(err.message || 'Failed to drop team');
+    }
+  };
 
   const handleApprove = async (itemId: string, version: number) => {
     try {
@@ -164,86 +209,271 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onSelect
 
   const activeTeamStats = viewingTeam ? getTeamStats(viewingTeam) : null;
 
+  // Strict RBAC Guard: Only Admins can access Admin Console and create teams
+  if (user && user.role !== 'ADMIN') {
+    return (
+      <div
+        style={{
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: 'calc(100vh - 61px)',
+          backgroundColor: '#f8fafc',
+          padding: 30,
+        }}
+      >
+        <div
+          className="glass-card animate-fade-in"
+          style={{
+            maxWidth: 480,
+            padding: 36,
+            textAlign: 'center',
+            backgroundColor: '#ffffff',
+            borderRadius: 16,
+            border: '1px solid #fecdd3',
+            boxShadow: '0 10px 25px -5px rgba(225, 29, 72, 0.08)',
+          }}
+        >
+          <div
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: '50%',
+              backgroundColor: '#ffe4e6',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px',
+            }}
+          >
+            <Shield size={28} color="#e11d48" />
+          </div>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', marginBottom: 8 }}>
+            Access Restricted: Admin Only
+          </h2>
+          <p style={{ color: '#64748b', fontSize: '0.88rem', lineHeight: 1.5, marginBottom: 20 }}>
+            Team creation, department provisioning, and squad management are strictly restricted to Platform Administrators.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="btn btn-primary"
+            style={{ width: '100%' }}
+          >
+            Return to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="animate-fade-in"
       style={{
-        display: 'grid',
-        gridTemplateColumns: '260px 1fr',
-        gap: 28,
-        minHeight: 'calc(100vh - 120px)',
-        alignItems: 'start',
+        display: 'flex',
+        width: '100%',
+        minHeight: 'calc(100vh - 61px)',
+        height: 'calc(100vh - 61px)',
+        alignItems: 'stretch',
+        overflow: 'hidden',
+        backgroundColor: '#f8fafc',
       }}
     >
-      {/* ================= LEFT SIDEBAR NAVIGATION ================= */}
+      {/* ================= LEFT SIDEBAR NAVIGATION (FULL RECTANGLE TOUCHING BASE & COLLAPSIBLE) ================= */}
       <aside
-        className="glass-card"
         style={{
-          padding: '16px 12px',
-          position: 'sticky',
-          top: 80,
+          width: isCollapsed ? 70 : 250,
+          minWidth: isCollapsed ? 70 : 250,
+          height: '100%',
+          backgroundColor: '#ffffff',
+          borderRight: '1px solid #e2e8f0',
           display: 'flex',
           flexDirection: 'column',
-          gap: 4,
-          backgroundColor: '#ffffff',
-          borderColor: '#e2e8f0',
+          justifyContent: 'space-between',
+          transition: 'width 0.22s cubic-bezier(0.16, 1, 0.3, 1), min-width 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+          boxShadow: '1px 0 3px rgba(0, 0, 0, 0.03)',
+          overflow: 'hidden',
         }}
       >
-        <div style={{ padding: '0 8px 12px', borderBottom: '1px solid #e2e8f0', marginBottom: 6 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div
-              style={{
-                width: 30,
-                height: 30,
-                borderRadius: 8,
-                background: 'linear-gradient(135deg, #e11d48, #ea580c)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Shield size={16} color="#ffffff" />
-            </div>
-            <div>
-              <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0f172a' }}>Admin Console</div>
-              <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Operations & Squads</div>
-            </div>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto' }}>
+          {/* Top Header with Collapse Toggle */}
+          <div
+            style={{
+              padding: isCollapsed ? '14px 8px' : '16px 14px 12px',
+              borderBottom: '1px solid #e2e8f0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: isCollapsed ? 'center' : 'space-between',
+              minHeight: 60,
+              boxSizing: 'border-box',
+            }}
+          >
+            {isCollapsed ? (
+              <button
+                onClick={() => setIsCollapsed(false)}
+                title="Expand Admin Menu"
+                className="btn btn-sm"
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 8,
+                  backgroundColor: '#f1f5f9',
+                  border: '1px solid #e2e8f0',
+                  color: '#475569',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: 0,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <PanelLeftOpen size={18} />
+              </button>
+            ) : (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflow: 'hidden' }}>
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 8,
+                      background: 'linear-gradient(135deg, #e11d48, #ea580c)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      boxShadow: '0 2px 4px rgba(225, 29, 72, 0.2)',
+                    }}
+                  >
+                    <Shield size={17} color="#ffffff" />
+                  </div>
+                  <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0f172a' }}>Admin Console</div>
+                    <div style={{ fontSize: '0.7rem', color: '#64748b' }}>Operations & Squads</div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setIsCollapsed(true)}
+                  title="Collapse Sidebar"
+                  className="btn btn-sm"
+                  style={{
+                    padding: '6px',
+                    borderRadius: 6,
+                    backgroundColor: 'transparent',
+                    border: '1px solid transparent',
+                    color: '#64748b',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <PanelLeftClose size={18} />
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Navigation Links */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: isCollapsed ? '12px 6px' : '12px 10px', flex: 1 }}>
+            {navItems.map((item) => {
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  title={item.label}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: isCollapsed ? 'center' : 'space-between',
+                    padding: isCollapsed ? '12px 0' : '10px 14px',
+                    borderRadius: 8,
+                    fontSize: '0.86rem',
+                    fontWeight: isActive ? 700 : 500,
+                    color: isActive ? '#4338ca' : '#475569',
+                    backgroundColor: isActive ? '#eef2ff' : 'transparent',
+                    border: isActive ? '1px solid #c7d2fe' : '1px solid transparent',
+                    textAlign: 'left',
+                    transition: 'all 0.15s ease',
+                    width: '100%',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflow: 'hidden' }}>
+                    <span style={{ color: isActive ? '#4f46e5' : '#94a3b8', display: 'flex', flexShrink: 0 }}>
+                      {item.icon}
+                    </span>
+                    {!isCollapsed && (
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {item.label}
+                      </span>
+                    )}
+                  </div>
+                  {!isCollapsed && isActive && <ChevronRight size={14} color="#4f46e5" style={{ flexShrink: 0 }} />}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Bottom Sidebar Footer Touching the Base */}
+          <div
+            style={{
+              padding: isCollapsed ? '12px 6px' : '12px 14px',
+              borderTop: '1px solid #e2e8f0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: isCollapsed ? 'center' : 'space-between',
+            }}
+          >
+            {!isCollapsed ? (
+              <button
+                onClick={() => setIsCollapsed(true)}
+                className="btn btn-sm"
+                style={{
+                  width: '100%',
+                  padding: '7px 10px',
+                  fontSize: '0.78rem',
+                  gap: 6,
+                  color: '#64748b',
+                  backgroundColor: '#f8fafc',
+                  borderColor: '#e2e8f0',
+                }}
+              >
+                <PanelLeftClose size={15} />
+                <span>Collapse Menu</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsCollapsed(false)}
+                title="Expand Menu"
+                className="btn btn-sm"
+                style={{
+                  padding: '7px',
+                  backgroundColor: '#f8fafc',
+                  borderColor: '#e2e8f0',
+                  color: '#64748b',
+                }}
+              >
+                <PanelLeftOpen size={16} />
+              </button>
+            )}
           </div>
         </div>
-
-        {navItems.map((item) => {
-          const isActive = activeTab === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '10px 14px',
-                borderRadius: 8,
-                fontSize: '0.86rem',
-                fontWeight: isActive ? 700 : 500,
-                color: isActive ? '#4338ca' : '#475569',
-                backgroundColor: isActive ? '#eef2ff' : 'transparent',
-                border: isActive ? '1px solid #c7d2fe' : '1px solid transparent',
-                textAlign: 'left',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ color: isActive ? '#4f46e5' : '#94a3b8' }}>{item.icon}</span>
-                <span>{item.label}</span>
-              </div>
-              {isActive && <ChevronRight size={14} color="#4f46e5" />}
-            </button>
-          );
-        })}
       </aside>
 
       {/* ================= RIGHT MAIN CONTENT AREA ================= */}
-      <section style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <section
+        style={{
+          flex: 1,
+          height: '100%',
+          overflowY: 'auto',
+          padding: '24px 32px 60px',
+          minWidth: 0,
+        }}
+      >
         {/* ================= TAB 1: MANAGE TEAM ================= */}
         {activeTab === 'manage-team' && (
           <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -300,23 +530,42 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onSelect
                             </div>
                           </div>
 
-                          {/* Requested Eye Button */}
-                          <button
-                            onClick={() => setViewingTeam(team)}
-                            className="btn btn-sm"
-                            title="Inspect Team Tasks & Roster"
-                            style={{
-                              padding: '6px 12px',
-                              fontSize: '0.8rem',
-                              backgroundColor: '#f8fafc',
-                              borderColor: '#cbd5e1',
-                              color: '#334155',
-                              gap: 6,
-                            }}
-                          >
-                            <Eye size={15} color="#4f46e5" />
-                            <span>Inspect</span>
-                          </button>
+                          {/* Action Buttons: Inspect & Drop Team */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <button
+                              onClick={() => setViewingTeam(team)}
+                              className="btn btn-sm"
+                              title="Inspect Team Tasks & Roster"
+                              style={{
+                                padding: '6px 12px',
+                                fontSize: '0.8rem',
+                                backgroundColor: '#f8fafc',
+                                borderColor: '#cbd5e1',
+                                color: '#334155',
+                                gap: 6,
+                              }}
+                            >
+                              <Eye size={15} color="#4f46e5" />
+                              <span>Inspect</span>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTeam(team.id, team.name)}
+                              disabled={deleteTeamMutation.isPending}
+                              className="btn btn-sm"
+                              title="Drop and delete team"
+                              style={{
+                                padding: '6px 10px',
+                                fontSize: '0.8rem',
+                                backgroundColor: '#fef2f2',
+                                borderColor: '#fca5a5',
+                                color: '#b91c1c',
+                                gap: 4,
+                              }}
+                            >
+                              <Trash2 size={14} color="#b91c1c" />
+                              <span>Drop</span>
+                            </button>
+                          </div>
                         </div>
 
                         <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.5, minHeight: 40 }}>
@@ -768,17 +1017,27 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onSelect
         )}
       </Modal>
 
-      {/* ================= MODAL: ADD NEW TEAM ================= */}
-      <Modal isOpen={isNewTeamModalOpen} onClose={() => setIsNewTeamModalOpen(false)} title="Create New Team">
+      {/* ================= MODAL: CREATE NEW TEAM ================= */}
+      <Modal
+        isOpen={isNewTeamModalOpen}
+        onClose={() => setIsNewTeamModalOpen(false)}
+        title="Create New Team"
+        maxWidth={680}
+      >
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            createTeamMutation.mutate({ name: newTeamName, description: newTeamDesc });
+            createTeamMutation.mutate({
+              name: newTeamName,
+              description: newTeamDesc,
+              leadUserId: newTeamLeadId || undefined,
+              memberUserIds: newTeamMemberIds,
+            });
           }}
           style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
         >
           <div>
-            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 6, color: '#0f172a' }}>
+            <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, marginBottom: 6, color: '#0f172a' }}>
               Team Name *
             </label>
             <input
@@ -791,24 +1050,234 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onSelect
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 6, color: '#0f172a' }}>
+            <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 700, marginBottom: 6, color: '#0f172a' }}>
               Description
             </label>
             <textarea
               className="input-control"
-              rows={3}
-              placeholder="Responsibilities, scope, and domain..."
+              rows={2}
+              placeholder="Responsibilities, scope, and department domain..."
               value={newTeamDesc}
               onChange={(e) => setNewTeamDesc(e.target.value)}
             />
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
-            <button type="button" onClick={() => setIsNewTeamModalOpen(false)} className="btn">
+          {/* ADMIN / TEAM LEAD DROPDOWN */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <label style={{ fontSize: '0.84rem', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Crown size={15} color="#eab308" />
+                Assign Team Lead / Admin
+              </label>
+              {newTeamLeadId && (
+                <button
+                  type="button"
+                  onClick={() => setNewTeamLeadId('')}
+                  style={{ fontSize: '0.72rem', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+                >
+                  Clear Lead
+                </button>
+              )}
+            </div>
+            <select
+              className="input-control"
+              value={newTeamLeadId}
+              onChange={(e) => {
+                const val = e.target.value;
+                setNewTeamLeadId(val);
+                if (val) {
+                  setNewTeamMemberIds((prev) => prev.filter((id) => id !== val));
+                }
+              }}
+            >
+              <option value="">-- Choose Team Lead / Admin (All Employees) --</option>
+              {usersData?.map((u: any) => (
+                <option key={u.id} value={u.id}>
+                  {u.name} — {u.email} {u.team ? `(Current: ${u.team.name})` : '(No Team)'}
+                </option>
+              ))}
+            </select>
+            <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: 4 }}>
+              Appointed Lead will hold workflow review and approval authorization for this squad.
+            </div>
+          </div>
+
+          {/* SELECT EMPLOYEES (TEAM MEMBERS) */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <label style={{ fontSize: '0.84rem', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <UserCheck size={15} color="#4f46e5" />
+                Select Members & Contributors
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, backgroundColor: '#e0e7ff', color: '#4338ca', padding: '2px 8px', borderRadius: 12 }}>
+                  {newTeamMemberIds.length} Selected
+                </span>
+              </label>
+
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const allNonLeadIds = (usersData || [])
+                      .filter((u: any) => u.id !== newTeamLeadId)
+                      .map((u: any) => u.id);
+                    setNewTeamMemberIds(allNonLeadIds);
+                  }}
+                  style={{ fontSize: '0.72rem', color: '#4f46e5', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+                >
+                  Select All
+                </button>
+                <span style={{ color: '#cbd5e1' }}>|</span>
+                <button
+                  type="button"
+                  onClick={() => setNewTeamMemberIds([])}
+                  style={{ fontSize: '0.72rem', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer' }}
+                >
+                  Deselect All
+                </button>
+              </div>
+            </div>
+
+            {/* Filter Search Input */}
+            <div style={{ position: 'relative', marginBottom: 8 }}>
+              <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              <input
+                type="text"
+                className="input-control"
+                placeholder="Filter members by name or email..."
+                value={memberSearchTerm}
+                onChange={(e) => setMemberSearchTerm(e.target.value)}
+                style={{ paddingLeft: 30, fontSize: '0.8rem', height: 34 }}
+              />
+            </div>
+
+            {/* Scrollable employee checkboxes list */}
+            <div
+              style={{
+                maxHeight: 130,
+                overflowY: 'auto',
+                border: '1px solid #e2e8f0',
+                borderRadius: 8,
+                padding: 6,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 4,
+                backgroundColor: '#f8fafc',
+              }}
+            >
+              {usersData
+                ?.filter((u: any) => {
+                  if (!memberSearchTerm.trim()) return true;
+                  const q = memberSearchTerm.toLowerCase();
+                  return u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
+                })
+                .map((u: any) => {
+                  const isLead = u.id === newTeamLeadId;
+                  const isChecked = newTeamMemberIds.includes(u.id);
+                  return (
+                    <label
+                      key={u.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '8px 10px',
+                        borderRadius: 6,
+                        backgroundColor: isChecked ? '#eef2ff' : '#ffffff',
+                        border: isChecked ? '1px solid #c7d2fe' : '1px solid #e2e8f0',
+                        cursor: isLead ? 'not-allowed' : 'pointer',
+                        opacity: isLead ? 0.6 : 1,
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <input
+                          type="checkbox"
+                          disabled={isLead}
+                          checked={isChecked}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setNewTeamMemberIds([...newTeamMemberIds, u.id]);
+                            } else {
+                              setNewTeamMemberIds(newTeamMemberIds.filter((id) => id !== u.id));
+                            }
+                          }}
+                          style={{ cursor: isLead ? 'not-allowed' : 'pointer' }}
+                        />
+                        <div>
+                          <div style={{ fontSize: '0.84rem', fontWeight: 600, color: '#0f172a' }}>{u.name}</div>
+                          <div style={{ fontSize: '0.72rem', color: '#64748b' }}>{u.email}</div>
+                        </div>
+                      </div>
+
+                      <div>
+                        {isLead ? (
+                          <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: 12, backgroundColor: '#fef3c7', color: '#b45309' }}>
+                            Appointed Lead
+                          </span>
+                        ) : u.team ? (
+                          <span style={{ fontSize: '0.7rem', color: '#64748b', backgroundColor: '#f1f5f9', padding: '2px 6px', borderRadius: 4 }}>
+                            {u.team.name}
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: '0.7rem', color: '#10b981', backgroundColor: '#ecfdf5', padding: '2px 6px', borderRadius: 4 }}>
+                            Unassigned
+                          </span>
+                        )}
+                      </div>
+                    </label>
+                  );
+                })}
+            </div>
+          </div>
+
+          {/* ACTION BUTTONS: LEFT CANCEL, RIGHT PUBLISH TEAM */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginTop: 14,
+              paddingTop: 16,
+              borderTop: '1px solid #e2e8f0',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                setIsNewTeamModalOpen(false);
+                setNewTeamName('');
+                setNewTeamDesc('');
+                setNewTeamLeadId('');
+                setNewTeamMemberIds([]);
+              }}
+              className="btn"
+              style={{
+                padding: '10px 24px',
+                fontSize: '0.88rem',
+                fontWeight: 600,
+                backgroundColor: '#f1f5f9',
+                border: '1px solid #cbd5e1',
+                color: '#475569',
+                borderRadius: 8,
+                minWidth: 120,
+              }}
+            >
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary" disabled={createTeamMutation.isPending}>
-              {createTeamMutation.isPending ? 'Creating...' : 'Create Team'}
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={createTeamMutation.isPending}
+              style={{
+                padding: '10px 28px',
+                fontSize: '0.88rem',
+                fontWeight: 700,
+                borderRadius: 8,
+                boxShadow: '0 4px 14px rgba(79, 70, 229, 0.3)',
+                minWidth: 150,
+              }}
+            >
+              {createTeamMutation.isPending ? 'Publishing...' : 'Publish Team'}
             </button>
           </div>
         </form>

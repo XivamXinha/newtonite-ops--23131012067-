@@ -7,9 +7,27 @@ const realPrisma = new PrismaClient({
 
 // Seed data template
 const SEED_TEAMS = [
-  { id: 'team-eng', name: 'Engineering', description: 'Core product development & distributed backend' },
-  { id: 'team-devops', name: 'DevOps & IT Support', description: 'Cloud infrastructure, CI/CD, and internal IT' },
-  { id: 'team-sec', name: 'Security Operations', description: 'SecOps, vulnerability mitigation, and compliance' },
+  {
+    id: 'team-eng',
+    name: 'Engineering',
+    description: 'Core product development & distributed backend',
+    leadUserId: 'u-employ-1',
+    memberUserIds: ['u-employ-2', 'u-employ-3', 'u-employ-4', 'u-employ-5'],
+  },
+  {
+    id: 'team-devops',
+    name: 'DevOps & IT Support',
+    description: 'Cloud infrastructure, CI/CD, and internal IT',
+    leadUserId: 'u-employ-6',
+    memberUserIds: ['u-employ-7', 'u-employ-8', 'u-employ-9', 'u-employ-10'],
+  },
+  {
+    id: 'team-sec',
+    name: 'Security Operations',
+    description: 'SecOps, vulnerability mitigation, and compliance',
+    leadUserId: 'u-employ-11',
+    memberUserIds: ['u-employ-12', 'u-employ-13', 'u-employ-14'],
+  },
 ];
 
 const defaultPasswordHash = bcrypt.hashSync('123456', 10);
@@ -19,42 +37,21 @@ const buildEmployees = () => {
   const users = [];
   for (let i = 1; i <= 20; i++) {
     const email = `employ${i}@gmail.com`;
-    let role = Role.MEMBER;
-    let teamId: string | null = 'team-eng';
-
-    if (i === 1) {
-      role = Role.LEAD;
-      teamId = 'team-eng';
-    } else if (i <= 5) {
-      role = i === 5 ? Role.VIEWER : Role.MEMBER;
-      teamId = 'team-eng';
-    } else if (i === 6) {
-      role = Role.LEAD;
-      teamId = 'team-devops';
-    } else if (i <= 10) {
-      role = i === 10 ? Role.VIEWER : Role.MEMBER;
-      teamId = 'team-devops';
-    } else if (i === 11) {
-      role = Role.LEAD;
-      teamId = 'team-sec';
-    } else if (i <= 15) {
-      role = i === 15 ? Role.VIEWER : Role.MEMBER;
-      teamId = 'team-sec';
-    } else if (i <= 18) {
-      role = Role.MEMBER;
-      teamId = i === 16 ? 'team-eng' : i === 17 ? 'team-devops' : 'team-sec';
-    } else if (i === 19) {
-      role = Role.LEAD;
-      teamId = 'team-eng';
-    } else if (i === 20) {
-      role = Role.ADMIN;
-      teamId = null; // Global Admin
+    const isAdmin = i === 20;
+    const role = isAdmin ? Role.ADMIN : Role.MEMBER;
+    // Assign some members to initial teams, others unassigned
+    let teamId: string | null = null;
+    if (!isAdmin) {
+      if (i <= 5) teamId = 'team-eng';
+      else if (i <= 10) teamId = 'team-devops';
+      else if (i <= 14) teamId = 'team-sec';
+      else teamId = null; // employ15 to employ19 unassigned to test empty team member state
     }
 
     users.push({
       id: `u-employ-${i}`,
       email,
-      name: `Employee ${i}${role === Role.ADMIN ? ' (Admin)' : role === Role.LEAD ? ' (Lead)' : role === Role.VIEWER ? ' (Viewer)' : ''}`,
+      name: isAdmin ? `Employee 20 (Admin)` : `Employee ${i}`,
       role,
       teamId,
       passwordHash: defaultPasswordHash,
@@ -65,161 +62,84 @@ const buildEmployees = () => {
 
 const SEED_USERS = buildEmployees();
 
-let mockTeams = [...SEED_TEAMS];
-let mockUsers = [...SEED_USERS];
-let mockWorkItems = [
+const SEED_WORK_ITEMS = [
+  // Flow 1: Same-team assignment: Engineering Lead (u-employ-1) assigned to Employee 2 (u-employ-2)
   {
-    id: 'wi-1',
-    title: 'Implement OAuth2.0 Token Revocation Protocol',
-    description: 'RFC 7009 token revocation support to terminate compromised sessions immediately across distributed microservices.',
+    id: 'wi-flow1-same-team',
+    title: 'Flow 1: OAuth2.0 Token Revocation Protocol',
+    description: 'Same-team assignment: Assigned by Engineering Lead to Employee 2. Currently being worked on.',
     type: WorkItemType.TASK,
     priority: Priority.HIGH,
     status: Status.IN_PROGRESS,
     teamId: 'team-eng',
-    reporterId: 'u-employ-20',
-    assigneeId: 'u-employ-1',
-    dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-    version: 1,
-    createdAt: new Date(Date.now() - 3600000 * 24),
-    updatedAt: new Date(Date.now() - 3600000 * 2),
-  },
-  {
-    id: 'wi-2',
-    title: 'Database connection pool exhaustion on payment gateway',
-    description: 'Transactions experiencing 504 Gateway Timeout during peak billing cycle. Needs immediate connection pool tuning and query audit.',
-    type: WorkItemType.INCIDENT,
-    priority: Priority.URGENT,
-    status: Status.OPEN,
-    teamId: 'team-eng',
-    reporterId: 'u-employ-1',
-    assigneeId: null, // Unassigned Urgent
-    dueDate: new Date(Date.now() + 12 * 60 * 60 * 1000),
-    version: 1,
-    createdAt: new Date(Date.now() - 3600000 * 5),
-    updatedAt: new Date(Date.now() - 3600000 * 5),
-  },
-  {
-    id: 'wi-3',
-    title: 'Upgrade Prisma ORM and apply zero-downtime database migration',
-    description: 'Migrating schema with backward-compatible nullable columns and updated generated client types.',
-    type: WorkItemType.TASK,
-    priority: Priority.MEDIUM,
-    status: Status.IN_REVIEW, // Awaiting Lead Approval
-    teamId: 'team-eng',
+    targetTeamId: null,
     reporterId: 'u-employ-1',
     assigneeId: 'u-employ-2',
-    dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-    version: 2,
-    createdAt: new Date(Date.now() - 3600000 * 48),
-    updatedAt: new Date(Date.now() - 3600000 * 1),
-  },
-  {
-    id: 'wi-4',
-    title: 'Refactor TanStack Query caching for optimistic task updates',
-    description: 'Ensure instant optimistic feedback on status changes with rollback on server 409 conflict.',
-    type: WorkItemType.TASK,
-    priority: Priority.MEDIUM,
-    status: Status.IN_PROGRESS,
-    teamId: 'team-eng',
-    reporterId: 'u-employ-1',
-    assigneeId: 'u-employ-2',
-    dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+    dueDate: new Date(Date.now() + 3 * 86400000),
     version: 1,
-    createdAt: new Date(Date.now() - 3600000 * 12),
-    updatedAt: new Date(Date.now() - 3600000 * 3),
+    createdAt: new Date(Date.now() - 3600000),
+    updatedAt: new Date(),
   },
+  // Flow 2: Cross-team request by lead: Engineering Lead (u-employ-1) requested DevOps (team-devops)
+  // Awaiting DevOps Lead (u-employ-6) approval! Once accepted, enters DevOps claim queue for DevOps members.
   {
-    id: 'wi-5',
-    title: 'SSL Certificate expiration alert for api.newtonite.internal',
-    description: 'Cert-manager automated renewal failed due to DNS challenge rate limits. Renew manually.',
-    type: WorkItemType.INCIDENT,
-    priority: Priority.URGENT,
-    status: Status.OPEN,
-    teamId: 'team-devops',
-    reporterId: 'u-employ-6',
-    assigneeId: null, // Unassigned Urgent for DevOps
-    dueDate: new Date(Date.now() + 6 * 60 * 60 * 1000),
-    version: 1,
-    createdAt: new Date(Date.now() - 3600000 * 4),
-    updatedAt: new Date(Date.now() - 3600000 * 4),
-  },
-  {
-    id: 'wi-6',
-    title: 'Kubernetes horizontal pod autoscaling threshold tuning',
-    description: 'Lower target CPU utilization from 85% to 70% to handle sudden traffic spikes gracefully.',
+    id: 'wi-flow2-lead-cross-team',
+    title: 'Flow 2: Cloudflare Edge SSL & WAF Rules Provisioning',
+    description: 'Cross-team request created by Engineering Lead (Employee 1) targeting DevOps. Awaiting DevOps Lead acceptance to release to DevOps Claim Queue.',
     type: WorkItemType.TASK,
     priority: Priority.HIGH,
     status: Status.IN_REVIEW,
     teamId: 'team-devops',
-    reporterId: 'u-employ-6',
-    assigneeId: 'u-employ-7',
-    dueDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
-    version: 2,
-    createdAt: new Date(Date.now() - 3600000 * 30),
-    updatedAt: new Date(Date.now() - 3600000 * 2),
+    targetTeamId: 'team-devops',
+    reporterId: 'u-employ-1',
+    assigneeId: null,
+    dueDate: new Date(Date.now() + 2 * 86400000),
+    version: 1,
+    createdAt: new Date(Date.now() - 7200000),
+    updatedAt: new Date(),
   },
+  // Flow 3: Cross-team request by member: Engineering Member (u-employ-3) requested DevOps (team-devops)
+  // Awaiting Engineering Lead (u-employ-1) approval first! Once approved, goes to DevOps Lead, then DevOps claim queue.
   {
-    id: 'wi-7',
-    title: 'Configure automated security scanning in CI/CD pipeline',
-    description: 'Integrated Semgrep and Snyk vulnerability checking into Github Actions workflow.',
+    id: 'wi-flow3-member-cross-team',
+    title: 'Flow 3: CI/CD Docker Cache Optimization for Monorepo',
+    description: 'Cross-team request initiated by Engineering Member (Employee 3) targeting DevOps. Awaiting origin Engineering Lead (Employee 1) approval to forward.',
     type: WorkItemType.TASK,
-    priority: Priority.LOW,
-    status: Status.RESOLVED,
-    teamId: 'team-eng',
-    reporterId: 'u-employ-20',
-    assigneeId: 'u-employ-1',
-    dueDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    version: 3,
-    createdAt: new Date(Date.now() - 3600000 * 72),
-    updatedAt: new Date(Date.now() - 3600000 * 24),
+    priority: Priority.MEDIUM,
+    status: Status.IN_REVIEW,
+    teamId: 'team-eng', // In Engineering awaiting Engineering Lead approval!
+    targetTeamId: 'team-devops', // Destination is DevOps!
+    reporterId: 'u-employ-3',
+    assigneeId: null,
+    dueDate: new Date(Date.now() + 4 * 86400000),
+    version: 1,
+    createdAt: new Date(Date.now() - 1800000),
+    updatedAt: new Date(),
+  },
+  // Flow 1 Unassigned task in DevOps claim queue (ready for DevOps members to claim)
+  {
+    id: 'wi-flow1-unassigned-claimable',
+    title: 'Flow 1: Terraform Staging Environment Drift Remediation',
+    description: 'Unassigned squad task in DevOps claim queue. Any DevOps member can claim this task and work on it.',
+    type: WorkItemType.TASK,
+    priority: Priority.MEDIUM,
+    status: Status.OPEN,
+    teamId: 'team-devops',
+    targetTeamId: null,
+    reporterId: 'u-employ-6',
+    assigneeId: null,
+    dueDate: new Date(Date.now() + 5 * 86400000),
+    version: 1,
+    createdAt: new Date(Date.now() - 9000000),
+    updatedAt: new Date(),
   },
 ];
 
-let mockActivities = [
-  {
-    id: 'act-1',
-    workItemId: 'wi-1',
-    userId: 'u-employ-20',
-    action: 'CREATED',
-    details: JSON.stringify({ priority: 'HIGH', assignee: 'Employee 1' }),
-    createdAt: new Date(Date.now() - 3600000 * 24),
-  },
-  {
-    id: 'act-2',
-    workItemId: 'wi-2',
-    userId: 'u-employ-1',
-    action: 'CREATED',
-    details: JSON.stringify({ priority: 'URGENT', unassigned: true }),
-    createdAt: new Date(Date.now() - 3600000 * 5),
-  },
-  {
-    id: 'act-3',
-    workItemId: 'wi-3',
-    userId: 'u-employ-2',
-    action: 'STATUS_CHANGE',
-    details: JSON.stringify({ from: 'IN_PROGRESS', to: 'IN_REVIEW', reason: 'PR submitted, awaiting Lead approval' }),
-    createdAt: new Date(Date.now() - 3600000 * 1),
-  },
-];
-
-let mockComments = [
-  {
-    id: 'com-1',
-    workItemId: 'wi-1',
-    userId: 'u-employ-1',
-    content: 'I have started implementing the token blacklist in Redis with automated expiry.',
-    createdAt: new Date(Date.now() - 3600000 * 10),
-    updatedAt: new Date(Date.now() - 3600000 * 10),
-  },
-  {
-    id: 'com-2',
-    workItemId: 'wi-3',
-    userId: 'u-employ-2',
-    content: 'All Vitest test suites passed locally. Ready for Employee 1 (Lead) to review and approve.',
-    createdAt: new Date(Date.now() - 3600000 * 1),
-    updatedAt: new Date(Date.now() - 3600000 * 1),
-  },
-];
+let mockTeams = [...SEED_TEAMS];
+let mockUsers = [...SEED_USERS];
+let mockWorkItems: any[] = [...SEED_WORK_ITEMS];
+let mockActivities: any[] = [];
+let mockComments: any[] = [];
 
 let mockIdempotency: Record<string, { statusCode: number; responseBody: string; expiresAt: Date }> = {};
 
@@ -275,21 +195,33 @@ const memoryStore = {
       if (!t) return null;
       const teamObj: any = { ...t };
       if (args.include?.users) {
-        teamObj.users = mockUsers.filter((u) => u.teamId === t.id).map((u) => ({ id: u.id, name: u.name, email: u.email, role: u.role }));
+        teamObj.users = mockUsers
+          .filter((u) => u.teamId === t.id || t.leadUserId === u.id || t.memberUserIds?.includes(u.id))
+          .map((u) => ({
+            id: u.id,
+            name: u.name,
+            email: u.email,
+            role: (t.leadUserId === u.id || (u.teamId === t.id && (u.role as any) === Role.LEAD)) ? Role.LEAD : Role.MEMBER,
+          }));
       }
       if (args.include?.workItems) {
-        teamObj.workItems = mockWorkItems.filter((w) => w.teamId === t.id).map((w) => enrichWorkItem(w, { assignee: true }));
+        teamObj.workItems = mockWorkItems.filter((w) => w.teamId === t.id).map((w) => enrichWorkItem(w, { assignee: true, reporter: true }));
       }
       return teamObj;
     },
     async findMany() {
-      return mockTeams.map((t) => {
-        const teamUsers = mockUsers.filter((u) => u.teamId === t.id);
+      return mockTeams.map((t: any) => {
+        const teamUsers = mockUsers.filter((u) => u.teamId === t.id || t.leadUserId === u.id || t.memberUserIds?.includes(u.id));
         const teamItems = mockWorkItems.filter((w) => w.teamId === t.id);
         return {
           ...t,
-          users: teamUsers.map((u) => ({ id: u.id, name: u.name, email: u.email, role: u.role })),
-          workItems: teamItems.map((w) => enrichWorkItem(w, { assignee: true })),
+          users: teamUsers.map((u) => ({
+            id: u.id,
+            name: u.name,
+            email: u.email,
+            role: (t.leadUserId === u.id || (u.teamId === t.id && (u.role as any) === Role.LEAD)) ? Role.LEAD : Role.MEMBER,
+          })),
+          workItems: teamItems.map((w) => enrichWorkItem(w, { assignee: true, reporter: true })),
           _count: {
             users: teamUsers.length,
             workItems: teamItems.length,
@@ -302,11 +234,25 @@ const memoryStore = {
         id: `team-${Date.now()}`,
         name: args.data.name,
         description: args.data.description || null,
+        leadUserId: args.data.leadUserId || null,
+        memberUserIds: args.data.memberUserIds || [],
         createdAt: new Date(),
         updatedAt: new Date(),
       };
       mockTeams.push(newTeam);
       return newTeam;
+    },
+    async delete(args: { where: { id: string } }) {
+      const idx = mockTeams.findIndex((t) => t.id === args.where.id);
+      if (idx === -1) return null;
+      const [removed] = mockTeams.splice(idx, 1);
+      mockUsers.forEach((u) => {
+        if (u.teamId === args.where.id) {
+          u.teamId = null;
+        }
+      });
+      mockWorkItems = mockWorkItems.filter((w) => w.teamId !== args.where.id);
+      return removed;
     },
   },
 
@@ -343,6 +289,7 @@ const memoryStore = {
         priority: args.data.priority,
         status: args.data.status || Status.OPEN,
         teamId: args.data.teamId,
+        targetTeamId: args.data.targetTeamId || null,
         reporterId: args.data.reporterId,
         assigneeId: args.data.assigneeId || null,
         dueDate: args.data.dueDate || null,
@@ -384,9 +331,54 @@ const memoryStore = {
       mockWorkItems[index] = updated;
       return { count: 1 };
     },
+
+    async delete(args: { where: { id: string } }) {
+      const index = mockWorkItems.findIndex((w) => w.id === args.where.id);
+      if (index === -1) return null;
+      const [removed] = mockWorkItems.splice(index, 1);
+      mockActivities = mockActivities.filter((a) => a.workItemId !== args.where.id);
+      mockComments = mockComments.filter((c) => c.workItemId !== args.where.id);
+      return removed;
+    },
   },
 
   activityLog: {
+    async count(args?: { where?: any }) {
+      if (!args?.where) return mockActivities.length;
+      return mockActivities.filter((a) => {
+        if (args.where.workItemId && a.workItemId !== args.where.workItemId) return false;
+        if (args.where.action && a.action !== args.where.action) return false;
+        return true;
+      }).length;
+    },
+    async findMany(args?: { where?: any; take?: number; orderBy?: any; include?: any }) {
+      let list = [...mockActivities];
+      if (args?.where) {
+        list = list.filter((a) => {
+          if (args.where.workItemId && a.workItemId !== args.where.workItemId) return false;
+          if (args.where.action && a.action !== args.where.action) return false;
+          if (args.where.workItem?.teamId) {
+            const wi = mockWorkItems.find((w) => w.id === a.workItemId);
+            if (!wi) return false;
+            if (args.where.workItem.teamId.in && !args.where.workItem.teamId.in.includes(wi.teamId)) return false;
+            if (typeof args.where.workItem.teamId === 'string' && wi.teamId !== args.where.workItem.teamId) return false;
+          }
+          return true;
+        });
+      }
+      list.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      if (args?.take) list = list.slice(0, args.take);
+      return list.map((a) => {
+        const u = mockUsers.find((usr) => usr.id === a.userId);
+        const wi = mockWorkItems.find((w) => w.id === a.workItemId);
+        const team = wi ? mockTeams.find((t) => t.id === wi.teamId) : null;
+        return {
+          ...a,
+          user: u ? { id: u.id, name: u.name, email: u.email, role: u.role } : null,
+          workItem: wi ? { id: wi.id, title: wi.title, status: wi.status, teamId: wi.teamId, team } : null,
+        };
+      });
+    },
     async create(args: { data: any }) {
       const log = {
         id: `act-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -452,7 +444,10 @@ const memoryStore = {
 function applyFilters(items: typeof mockWorkItems, where?: any): typeof mockWorkItems {
   if (!where) return [...items];
   return items.filter((item) => {
-    if (where.teamId && item.teamId !== where.teamId) return false;
+    if (where.teamId) {
+      if (where.teamId.in && !where.teamId.in.includes(item.teamId)) return false;
+      if (typeof where.teamId === 'string' && item.teamId !== where.teamId) return false;
+    }
     if (where.status) {
       if (where.status.in && !where.status.in.includes(item.status)) return false;
       if (typeof where.status === 'string' && item.status !== where.status) return false;
@@ -463,6 +458,17 @@ function applyFilters(items: typeof mockWorkItems, where?: any): typeof mockWork
     }
     if (where.type && item.type !== where.type) return false;
     if (where.assigneeId !== undefined && item.assigneeId !== where.assigneeId) return false;
+
+    if (where.NOT) {
+      const notList = Array.isArray(where.NOT) ? where.NOT : [where.NOT];
+      for (const clause of notList) {
+        let matchesAll = true;
+        if (clause.status !== undefined && item.status !== clause.status) matchesAll = false;
+        if (clause.assigneeId !== undefined && item.assigneeId !== clause.assigneeId) matchesAll = false;
+        if (clause.teamId !== undefined && item.teamId !== clause.teamId) matchesAll = false;
+        if (matchesAll) return false;
+      }
+    }
 
     if (where.OR && Array.isArray(where.OR)) {
       const matchesSearch = where.OR.some((clause: any) => {
@@ -482,11 +488,12 @@ function applyFilters(items: typeof mockWorkItems, where?: any): typeof mockWork
 
 function enrichWorkItem(w: typeof mockWorkItems[0], include?: any) {
   const team = mockTeams.find((t) => t.id === w.teamId) || null;
+  const targetTeam = w.targetTeamId ? mockTeams.find((t) => t.id === w.targetTeamId) || null : null;
   const reporter = mockUsers.find((u) => u.id === w.reporterId) || null;
   const assignee = mockUsers.find((u) => u.id === w.assigneeId) || null;
 
-  const item: any = { ...w };
-  if (include?.team) item.team = team;
+  const item: any = { ...w, targetTeam, targetTeamId: w.targetTeamId || null };
+  item.team = team;
   if (include?.reporter) item.reporter = reporter ? { id: reporter.id, name: reporter.name, email: reporter.email, role: reporter.role } : null;
   if (include?.assignee) item.assignee = assignee ? { id: assignee.id, name: assignee.name, email: assignee.email, role: assignee.role } : null;
 

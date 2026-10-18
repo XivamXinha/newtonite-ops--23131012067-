@@ -40,7 +40,7 @@ export const handleIdempotency = async (req: AuthenticatedRequest, res: Response
               expiresAt,
             },
           })
-          .catch((err) => {
+          .catch((err: any) => {
             console.error('Failed to store idempotency record:', err);
           });
       }

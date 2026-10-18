@@ -25,6 +25,24 @@ export class AuthService {
       }
     }
 
+    const allTeams = await prisma.team.findMany();
+    const leadTeams = allTeams.filter((t: any) =>
+      t.leadUserId === user.id ||
+      t.users?.some((u: any) => u.id === user.id && u.role === 'LEAD') ||
+      (user.teamId === t.id && user.role === 'LEAD')
+    );
+    const memberTeams = allTeams.filter((t: any) =>
+      !leadTeams.some((lt: any) => lt.id === t.id) &&
+      (t.memberUserIds?.includes(user.id) ||
+       t.users?.some((u: any) => u.id === user.id && (u.role === 'MEMBER' || u.role === 'VIEWER')) ||
+       (user.teamId === t.id && (user.role === 'MEMBER' || user.role === 'VIEWER')))
+    );
+
+    const leadTeam = leadTeams[0] ? { id: leadTeams[0].id, name: leadTeams[0].name, description: leadTeams[0].description } : null;
+    const memberTeam = memberTeams[0] ? { id: memberTeams[0].id, name: memberTeams[0].name, description: memberTeams[0].description } : null;
+    const leadTeamIds = leadTeams.map((t: any) => t.id);
+    const isLead = leadTeams.length > 0 || user.role === 'LEAD';
+
     const payload: AuthUser = {
       id: user.id,
       email: user.email,
@@ -32,6 +50,12 @@ export class AuthService {
       role: user.role,
       teamId: user.teamId,
       teamName: user.team?.name || null,
+      leadTeam,
+      memberTeam,
+      leadTeams: leadTeams.map((t: any) => ({ id: t.id, name: t.name, description: t.description })),
+      memberTeams: memberTeams.map((t: any) => ({ id: t.id, name: t.name, description: t.description })),
+      leadTeamIds,
+      isLead,
     };
 
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
@@ -68,6 +92,49 @@ export class AuthService {
       throw new NotFoundError('User not found');
     }
 
+    const allTeams = await prisma.team.findMany();
+    const leadTeams = allTeams.filter((t: any) =>
+      t.leadUserId === user.id ||
+      t.users?.some((u: any) => u.id === user.id && u.role === 'LEAD') ||
+      (user.teamId === t.id && user.role === 'LEAD')
+    );
+    const memberTeams = allTeams.filter((t: any) =>
+      !leadTeams.some((lt: any) => lt.id === t.id) &&
+      (t.memberUserIds?.includes(user.id) ||
+       t.users?.some((u: any) => u.id === user.id && (u.role === 'MEMBER' || u.role === 'VIEWER')) ||
+       (user.teamId === t.id && (user.role === 'MEMBER' || user.role === 'VIEWER')))
+    );
+
+    const leadTeam = leadTeams[0] ? { id: leadTeams[0].id, name: leadTeams[0].name, description: leadTeams[0].description } : null;
+    const memberTeam = memberTeams[0] ? { id: memberTeams[0].id, name: memberTeams[0].name, description: memberTeams[0].description } : null;
+    const leadTeamIds = leadTeams.map((t: any) => t.id);
+    const isLead = leadTeams.length > 0 || user.role === 'LEAD';
+
+    const assignedRoles = [];
+    if (user.role === 'ADMIN') {
+      assignedRoles.push({
+        role: user.role,
+        label: 'Platform Admin',
+        teamName: 'Global Platform (All Teams)',
+        teamId: null,
+        isAssigned: true,
+      });
+    }
+    assignedRoles.push({
+      role: 'LEAD' as any,
+      label: 'Team Leader (LEAD)',
+      teamName: leadTeams.length > 0 ? leadTeams.map((t: any) => t.name).join(', ') : null,
+      teamId: leadTeam ? leadTeam.id : null,
+      isAssigned: leadTeams.length > 0,
+    });
+    assignedRoles.push({
+      role: 'MEMBER' as any,
+      label: 'Squad Member (MEMBER)',
+      teamName: memberTeams.length > 0 ? memberTeams.map((t: any) => t.name).join(', ') : null,
+      teamId: memberTeam ? memberTeam.id : null,
+      isAssigned: memberTeams.length > 0,
+    });
+
     return {
       id: user.id,
       email: user.email,
@@ -75,6 +142,13 @@ export class AuthService {
       role: user.role,
       teamId: user.teamId,
       teamName: user.team?.name || null,
+      leadTeam,
+      memberTeam,
+      leadTeams: leadTeams.map((t: any) => ({ id: t.id, name: t.name, description: t.description })),
+      memberTeams: memberTeams.map((t: any) => ({ id: t.id, name: t.name, description: t.description })),
+      leadTeamIds,
+      isLead,
+      assignedRoles,
     };
   }
 }

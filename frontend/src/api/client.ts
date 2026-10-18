@@ -16,8 +16,8 @@ export class ConflictApiError extends ApiError {
     this.name = 'ConflictApiError';
   }
 }
-
-const BASE_URL = '/api';
+const rawApiUrl = (import.meta as any).env?.VITE_API_URL;
+const BASE_URL = rawApiUrl ? `${rawApiUrl.replace(/\/$/, '')}/api` : '/api';
 
 export async function apiRequest<T = any>(
   endpoint: string,

@@ -5,22 +5,24 @@ import { BadRequestError, UnauthorizedError } from '../utils/errors';
 import { z } from 'zod';
 
 const createWorkItemSchema = z.object({
-  title: z.string().min(3, 'Title must be at least 3 characters'),
-  description: z.string().min(5, 'Description must be at least 5 characters'),
-  type: z.enum(['TASK', 'INCIDENT']),
-  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']),
+  title: z.string().min(1, 'Title must be at least 1 character'),
+  description: z.string().optional().default(''),
+  type: z.enum(['TASK', 'INCIDENT']).optional().default('TASK'),
+  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional().default('MEDIUM'),
   teamId: z.string().optional(),
+  targetTeamId: z.string().nullable().optional(),
   assigneeId: z.string().nullable().optional(),
-  dueDate: z.string().nullable().optional(),
+  status: z.enum(['OPEN', 'IN_PROGRESS', 'IN_REVIEW', 'RESOLVED', 'CLOSED']).optional(),
+  dueDate: z.union([z.string(), z.null()]).optional(),
 });
 
 const updateWorkItemSchema = z.object({
-  title: z.string().min(3).optional(),
-  description: z.string().min(5).optional(),
+  title: z.string().min(1).optional(),
+  description: z.string().optional(),
   type: z.enum(['TASK', 'INCIDENT']).optional(),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
   assigneeId: z.string().nullable().optional(),
-  dueDate: z.string().nullable().optional(),
+  dueDate: z.union([z.string(), z.null()]).optional(),
   version: z.number({ required_error: 'Work item version is required for concurrency control' }),
 });
 
@@ -114,7 +116,7 @@ export class WorkItemController {
   static async transitionStatus(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     try {
       if (!req.user) throw new UnauthorizedError();
-      const { targetStatus, version } = req.body;
+      const { targetStatus, version, claimForSelf, comment } = req.body;
       if (!targetStatus) {
         throw new BadRequestError('targetStatus is required');
       }
@@ -126,7 +128,9 @@ export class WorkItemController {
         req.params.id,
         targetStatus,
         req.user,
-        version
+        version,
+        Boolean(claimForSelf),
+        comment ? String(comment) : undefined
       );
 
       return res.status(200).json({
@@ -148,6 +152,19 @@ export class WorkItemController {
         success: true,
         message: 'Comment added',
         data: comment,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async delete(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) throw new UnauthorizedError();
+      await WorkItemService.deleteWorkItem(req.params.id, req.user);
+      return res.status(200).json({
+        success: true,
+        message: 'Work item successfully deleted',
       });
     } catch (error) {
       next(error);

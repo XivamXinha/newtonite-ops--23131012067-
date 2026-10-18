@@ -129,10 +129,8 @@ export const WorkItemsPage: React.FC<WorkItemsPageProps> = ({ onSelectItem }) =>
           }}
         >
           <option value="">All Priorities</option>
-          <option value="LOW">Low</option>
-          <option value="MEDIUM">Medium</option>
-          <option value="HIGH">High</option>
-          <option value="URGENT">Urgent</option>
+          <option value="MEDIUM">Task</option>
+          <option value="URGENT">Priority</option>
         </select>
 
         {/* Type Filter */}

@@ -19,14 +19,59 @@ export class AdminController {
       if (req.user?.role !== Role.ADMIN) {
         throw new ForbiddenError('Only Admins can create new teams');
       }
-      const { name, description } = req.body;
+      const { name, description, leadUserId, memberUserIds } = req.body;
       if (!name || !name.trim()) {
         return res.status(400).json({ success: false, message: 'Team name is required' });
       }
       const team = await prisma.team.create({
-        data: { name: name.trim(), description: description?.trim() || null },
+        data: {
+          name: name.trim(),
+          description: description?.trim() || null,
+          leadUserId: leadUserId || null,
+          memberUserIds: Array.isArray(memberUserIds) ? memberUserIds : [],
+        } as any,
       });
+
+      // Assign selected Team Lead
+      if (leadUserId) {
+        await prisma.user.update({
+          where: { id: leadUserId },
+          data: { teamId: team.id, role: Role.LEAD },
+        });
+      }
+
+      // Assign selected Team Members
+      if (Array.isArray(memberUserIds) && memberUserIds.length > 0) {
+        for (const memberId of memberUserIds) {
+          if (memberId && memberId !== leadUserId) {
+            await prisma.user.update({
+              where: { id: memberId },
+              data: { teamId: team.id, role: Role.MEMBER },
+            });
+          }
+        }
+      }
+
       return res.status(201).json({ success: true, data: team });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  static async deleteTeam(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+    try {
+      if (req.user?.role !== Role.ADMIN) {
+        throw new ForbiddenError('Only Admins can delete teams');
+      }
+      const { id } = req.params;
+      const team = await prisma.team.findUnique({ where: { id } });
+      if (!team) {
+        throw new NotFoundError('Team not found');
+      }
+
+      await prisma.team.delete({ where: { id } });
+
+      return res.status(200).json({ success: true, message: 'Team successfully dropped' });
     } catch (err) {
       next(err);
     }

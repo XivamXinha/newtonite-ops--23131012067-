@@ -290,4 +290,69 @@ describe('Newtonite Critical System Behaviors (FR-01 to FR-14)', () => {
       expect(res.body.error.message).toContain('Viewers are not permitted to create work items');
     });
   });
+
+  /**
+   * Test 7: Team Creation Restricted Exclusively to Admins (FR-02)
+   */
+  describe('Behavior 7: Team Creation Restricted Exclusively to Admins', () => {
+    it('should forbid non-admins (Lead/Member/Viewer) from creating new teams', async () => {
+      const leadToken = createToken(aliceLeadEng);
+
+      const res = await request(app)
+        .post('/api/admin/teams')
+        .set('Authorization', `Bearer ${leadToken}`)
+        .send({
+          name: 'Unauthorized Squad',
+          description: 'Attempting to create team without Admin role',
+        });
+
+      expect(res.status).toBe(403);
+    });
+  });
+
+  /**
+   * Test 8: Post-Claim Isolation & Creator Claim Prevention
+   */
+  describe('Behavior 8: Post-Claim Isolation & Creator Claim Prevention', () => {
+    it('should forbid a member from claiming their own created task', async () => {
+      const token = createToken(bobMemberEng);
+
+      (prisma.workItem.findUnique as any).mockResolvedValueOnce({
+        id: 'task-created-by-bob',
+        title: 'Task by Bob',
+        reporterId: bobMemberEng.id, // Bob is creator!
+        teamId: 'team-eng',
+        assigneeId: null,
+        version: 1,
+      });
+
+      const res = await request(app)
+        .post('/api/work-items/task-created-by-bob/claim')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ version: 1 });
+
+      expect(res.status).toBe(403);
+      expect(res.body.error.message).toContain('Task creators cannot claim their own task');
+    });
+
+    it('should forbid another member from opening a task claimed by someone else', async () => {
+      const token = createToken(bobMemberEng);
+
+      (prisma.workItem.findUnique as any).mockResolvedValueOnce({
+        id: 'task-claimed-by-other',
+        title: 'Work item owned by colleague',
+        reporterId: 'user-another-reporter',
+        assigneeId: 'user-claimed-colleague', // Claimed by someone else!
+        teamId: 'team-eng',
+      });
+
+      const res = await request(app)
+        .get('/api/work-items/task-claimed-by-other')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).toBe(403);
+      expect(res.body.error.message).toContain('Access restricted: This task has been claimed by another member');
+    });
+  });
 });
+
