@@ -3,13 +3,13 @@ import { useAuth } from '../context/AuthContext';
 import { useDemoUsersQuery } from '../hooks/useWorkItems';
 import { RoleBadge } from '../components/Badge';
 import {
-  Shield,
-  ArrowRight,
-  Lock,
   Users,
   BarChart3,
   Crown,
   Search,
+  ArrowRight,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 const DEDICATED_ANALYST_PERSONAS = [
@@ -67,8 +67,10 @@ export const LoginPage: React.FC = () => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('123456');
+  const [rememberMe, setRememberMe] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDirectory, setShowDirectory] = useState(false);
   const [employeeFilter, setEmployeeFilter] = useState<'ALL' | 'LEAD' | 'MEMBER'>('ALL');
   const [employeeSearch, setEmployeeSearch] = useState('');
 
@@ -105,8 +107,15 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleDemoSelect = async (demoEmail: string) => {
+  const handleQuickSelect = (demoEmail: string) => {
     setEmail(demoEmail);
+    setPassword('123456');
+    setErrorMsg(null);
+  };
+
+  const handleInstantLogin = async (demoEmail: string) => {
+    setEmail(demoEmail);
+    setPassword('123456');
     setErrorMsg(null);
     setIsSubmitting(true);
     try {
@@ -122,459 +131,540 @@ export const LoginPage: React.FC = () => {
     <div
       style={{
         minHeight: '100vh',
-        backgroundColor: '#edf0f4',
+        background: 'linear-gradient(180deg, #c79bf8 0%, #d4b2fb 32%, #cad3b1 72%, #b9c69f 100%)',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        padding: '30px 16px',
+        padding: '40px 16px',
         boxSizing: 'border-box',
-        color: '#0f172a',
+        fontFamily: "'Quicksand', -apple-system, BlinkMacSystemFont, sans-serif",
       }}
     >
-      <div style={{ maxWidth: 1540, width: '100%' }}>
-        {/* Brand Header */}
-        <div style={{ textAlign: 'center', marginBottom: 26 }}>
-          <div
-            style={{
-              width: 52,
-              height: 52,
-              borderRadius: 14,
-              background: 'linear-gradient(135deg, #4f46e5, #06b6d4)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 8px 24px rgba(79, 70, 229, 0.25)',
-              marginBottom: 12,
-            }}
-          >
-            <Shield size={28} color="#ffffff" />
-          </div>
-          <h1
-            style={{
-              fontSize: '2.1rem',
-              fontWeight: 800,
-              letterSpacing: '-0.03em',
-              color: '#0f172a',
-              margin: 0,
-            }}
-          >
-            Newtonite Operations
-          </h1>
-          <p style={{ color: '#64748b', fontSize: '0.94rem', marginTop: 4 }}>
-            Enterprise Task Management & Cross-Team Incident Workflow Engine
-          </p>
-        </div>
-
-        {/* 4 DISTINCT CARDS: [1. REVIEWER / ANALYST] | [2. ADMIN] | [3. EMPLOYEE ID] | [4. SIGN IN WITH CREDENTIALS] */}
+      {/* Center Container matching exact reference image */}
+      <div
+        style={{
+          width: '100%',
+          maxWidth: 440,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}
+      >
+        {/* Horizontal Line with Circular Avatar in Center */}
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(310px, 1fr))',
-            gap: 20,
-            alignItems: 'stretch',
+            display: 'flex',
+            alignItems: 'center',
+            width: '100%',
+            maxWidth: 480,
+            marginBottom: 24,
           }}
         >
-          {/* ================= CARD 1: REVIEWER / ANALYST (VIEWER) ================= */}
+          {/* Left subtle white line */}
+          <div
+            style={{
+              flex: 1,
+              height: 2,
+              backgroundColor: 'rgba(255, 255, 255, 0.85)',
+              borderRadius: 2,
+            }}
+          />
+
+          {/* Central Circular Avatar */}
+          <div
+            style={{
+              width: 96,
+              height: 96,
+              borderRadius: '50%',
+              backgroundColor: '#ffffff',
+              boxShadow: '0 6px 20px rgba(0, 0, 0, 0.10)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 14px',
+              flexShrink: 0,
+            }}
+          >
+            {/* Minimalist Purple Outline User Icon */}
+            <svg
+              width="44"
+              height="44"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#b58bf4"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="7" r="4" />
+              <path d="M5.5 21a6.5 6.5 0 0 1 13 0" />
+            </svg>
+          </div>
+
+          {/* Right subtle white line */}
+          <div
+            style={{
+              flex: 1,
+              height: 2,
+              backgroundColor: 'rgba(255, 255, 255, 0.85)',
+              borderRadius: 2,
+            }}
+          />
+        </div>
+
+        {/* Form Wrap */}
+        <form
+          onSubmit={handleManualLogin}
+          style={{
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          {/* White Card */}
           <div
             style={{
               backgroundColor: '#ffffff',
-              borderRadius: 16,
-              padding: '22px 20px',
-              border: '1px solid #e2e8f0',
-              borderTop: '5px solid #10b981',
-              boxShadow: '0 4px 18px rgba(0, 0, 0, 0.05)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
+              borderRadius: 3,
+              boxShadow: '0 12px 32px rgba(0, 0, 0, 0.16)',
+              padding: '34px 34px 26px 34px',
+              boxSizing: 'border-box',
+              width: '100%',
             }}
           >
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div
-                    style={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: 10,
-                      backgroundColor: '#ecfdf5',
-                      border: '1px solid #a7f3d0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <BarChart3 size={20} color="#059669" />
-                  </div>
-                  <div>
-                    <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                      1. Reviewer / Analyst
-                    </h2>
-                    <span style={{ fontSize: '0.72rem', color: '#059669', fontWeight: 700 }}>
-                      5 Dedicated Accounts
-                    </span>
-                  </div>
-                </div>
-                <RoleBadge role="VIEWER" />
-              </div>
-
-              {/* Exact detail requested: "alalysist can do view or analysis work" */}
+            {/* Error Message if any */}
+            {errorMsg && (
               <div
                 style={{
-                  padding: '10px 12px',
-                  borderRadius: 8,
-                  backgroundColor: '#f0fdf4',
-                  border: '1px solid #bbf7d0',
-                  fontSize: '0.76rem',
-                  color: '#166534',
-                  lineHeight: 1.45,
-                  marginBottom: 14,
+                  padding: '9px 12px',
+                  borderRadius: 4,
+                  backgroundColor: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  color: '#b91c1c',
+                  fontSize: '0.78rem',
+                  marginBottom: 16,
+                  textAlign: 'center',
                 }}
               >
-                📊 <strong>Reviewer can do view or analysis work:</strong> Inspect all squads, analyze which team created what work item, who claimed it, and audit lead approval vs rework status.
+                {errorMsg}
               </div>
+            )}
 
+            {/* Input 1: Username / Email */}
+            <div
+              style={{
+                display: 'flex',
+                height: 50,
+                marginBottom: 16,
+                borderRadius: 2,
+                overflow: 'hidden',
+              }}
+            >
+              {/* Left Darker Gray Icon Box */}
               <div
                 style={{
+                  width: 52,
+                  backgroundColor: '#b8b8b8',
                   display: 'flex',
-                  flexDirection: 'column',
-                  gap: 8,
-                  maxHeight: 330,
-                  overflowY: 'auto',
-                  paddingRight: 4,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
                 }}
               >
-                {analystUsers.map((u: any) => (
-                  <button
-                    key={u.id}
-                    type="button"
-                    onClick={() => handleDemoSelect(u.email)}
-                    disabled={isSubmitting}
-                    style={{
-                      padding: '10px 12px',
-                      borderRadius: 10,
-                      backgroundColor: '#f8fafc',
-                      border: '1px solid #e2e8f0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      transition: 'all 0.15s ease',
-                      width: '100%',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#ecfdf5';
-                      e.currentTarget.style.borderColor = '#10b981';
-                      e.currentTarget.style.transform = 'translateY(-1px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f8fafc';
-                      e.currentTarget.style.borderColor = '#e2e8f0';
-                      e.currentTarget.style.transform = 'none';
-                    }}
-                  >
-                    <div style={{ overflow: 'hidden' }}>
-                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {u.name}
-                      </div>
-                      <div style={{ fontSize: '0.72rem', color: '#64748b', fontFamily: 'var(--font-mono)' }}>
-                        {u.email}
-                      </div>
-                    </div>
-                    <ArrowRight size={16} color="#059669" style={{ flexShrink: 0, marginLeft: 8 }} />
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ marginTop: 14, fontSize: '0.70rem', color: '#059669', fontWeight: 600, textAlign: 'center' }}>
-              ✓ Dedicated read-only audit governance
-            </div>
-          </div>
-
-          {/* ================= CARD 2: ADMIN (ADMINISTRATOR) ================= */}
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              borderRadius: 16,
-              padding: '22px 20px',
-              border: '1px solid #e2e8f0',
-              borderTop: '5px solid #6366f1',
-              boxShadow: '0 4px 18px rgba(0, 0, 0, 0.05)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-            }}
-          >
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div
-                    style={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: 10,
-                      backgroundColor: '#eef2ff',
-                      border: '1px solid #c7d2fe',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Crown size={20} color="#4f46e5" />
-                  </div>
-                  <div>
-                    <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                      2. Admin Console
-                    </h2>
-                    <span style={{ fontSize: '0.72rem', color: '#4f46e5', fontWeight: 700 }}>
-                      System Governance
-                    </span>
-                  </div>
-                </div>
-                <RoleBadge role="ADMIN" />
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="#3d3d3d"
+                >
+                  <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
+                </svg>
               </div>
 
+              {/* Right Lighter Gray Input Box */}
+              <input
+                type="text"
+                placeholder="Username"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                style={{
+                  flex: 1,
+                  backgroundColor: '#d8d8d8',
+                  border: 'none',
+                  outline: 'none',
+                  padding: '0 16px',
+                  fontSize: '0.96rem',
+                  color: '#262626',
+                  fontFamily: 'inherit',
+                }}
+              />
+            </div>
+
+            {/* Input 2: Password */}
+            <div
+              style={{
+                display: 'flex',
+                height: 50,
+                marginBottom: 18,
+                borderRadius: 2,
+                overflow: 'hidden',
+              }}
+            >
+              {/* Left Darker Gray Icon Box */}
               <div
                 style={{
-                  padding: '10px 12px',
-                  borderRadius: 8,
-                  backgroundColor: '#f5f3ff',
-                  border: '1px solid #ddd6fe',
-                  fontSize: '0.76rem',
-                  color: '#5b21b6',
-                  lineHeight: 1.45,
-                  marginBottom: 14,
+                  width: 52,
+                  backgroundColor: '#b8b8b8',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
                 }}
               >
-                👑 <strong>Platform Admin:</strong> Complete governance control — user administration, squad creation, system settings, and org-wide configuration.
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="#3d3d3d"
+                >
+                  <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" />
+                </svg>
               </div>
 
-              {adminUsers.map((u: any) => (
-                <button
-                  key={u.id}
-                  type="button"
-                  onClick={() => handleDemoSelect(u.email)}
-                  disabled={isSubmitting}
-                  style={{
-                    padding: '14px 16px',
-                    borderRadius: 10,
-                    backgroundColor: '#faf5ff',
-                    border: '1px solid #e9d5ff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'all 0.15s ease',
-                    width: '100%',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f3e8ff';
-                    e.currentTarget.style.borderColor = '#c084fc';
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#faf5ff';
-                    e.currentTarget.style.borderColor = '#e9d5ff';
-                    e.currentTarget.style.transform = 'none';
-                  }}
-                >
-                  <div>
-                    <div style={{ fontSize: '0.90rem', fontWeight: 800, color: '#0f172a' }}>
-                      {u.name}
-                    </div>
-                    <div style={{ fontSize: '0.76rem', color: '#6b21a8', fontFamily: 'var(--font-mono)', marginTop: 3 }}>
-                      {u.email}
-                    </div>
-                    <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: 2 }}>
-                      {u.teamName}
-                    </div>
-                  </div>
-                  <ArrowRight size={18} color="#7c3aed" />
-                </button>
-              ))}
-
-              <div
+              {/* Right Lighter Gray Input Box */}
+              <input
+                type="password"
+                placeholder="************"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
                 style={{
-                  marginTop: 16,
-                  padding: '12px 14px',
-                  borderRadius: 10,
-                  backgroundColor: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  fontSize: '0.74rem',
-                  color: '#64748b',
-                  lineHeight: 1.5,
+                  flex: 1,
+                  backgroundColor: '#d8d8d8',
+                  border: 'none',
+                  outline: 'none',
+                  padding: '0 16px',
+                  fontSize: '0.96rem',
+                  color: '#262626',
+                  fontFamily: 'inherit',
+                  letterSpacing: '2px',
                 }}
-              >
-                ⚡ <strong>Admin Capabilities:</strong>
-                <ul style={{ margin: '6px 0 0 16px', padding: 0 }}>
-                  <li>Create and assign squads/teams</li>
-                  <li>Promote members or appoint leads</li>
-                  <li>View enterprise OCC concurrency stats</li>
-                </ul>
-              </div>
+              />
             </div>
 
-            <div style={{ marginTop: 14, fontSize: '0.70rem', color: '#4f46e5', fontWeight: 600, textAlign: 'center' }}>
-              ✓ Full tenant administrative authority
-            </div>
-          </div>
-
-          {/* ================= CARD 3: EMPLOYEE ID (LEADS & MEMBERS) ================= */}
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              borderRadius: 16,
-              padding: '22px 20px',
-              border: '1px solid #e2e8f0',
-              borderTop: '5px solid #0284c7',
-              boxShadow: '0 4px 18px rgba(0, 0, 0, 0.05)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-            }}
-          >
-            <div>
-              {/* Header */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div
-                    style={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: 10,
-                      backgroundColor: '#f0f9ff',
-                      border: '1px solid #bae6fd',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Users size={20} color="#0284c7" />
-                  </div>
-                  <div>
-                    <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                      3. Employee Directory
-                    </h2>
-                    <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
-                      Leads & Members ({allEmployees.length})
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Exact details requested by user */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
-                <div
-                  style={{
-                    padding: '8px 10px',
-                    borderRadius: 8,
-                    backgroundColor: '#fffbeb',
-                    border: '1px solid #fde68a',
-                    fontSize: '0.74rem',
-                    color: '#92400e',
-                    lineHeight: 1.4,
-                  }}
-                >
-                  ⚡ <strong>Lead can control access:</strong> Review task requests, assign work, approve completed tasks, or return/reject for revisions.
-                </div>
-
-                <div
-                  style={{
-                    padding: '8px 10px',
-                    borderRadius: 8,
-                    backgroundColor: '#eff6ff',
-                    border: '1px solid #bfdbfe',
-                    fontSize: '0.74rem',
-                    color: '#1e40af',
-                    lineHeight: 1.4,
-                  }}
-                >
-                  👥 <strong>Employee work as following:</strong> Claim unassigned tasks from squad queue, execute work, and submit deliverables for lead sign-off.
-                </div>
-              </div>
-
-              {/* Filter Pills & Quick Search */}
-              <div
+            {/* Remember me & Forgot Password */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: '0.82rem',
+                color: '#848484',
+                marginTop: 6,
+              }}
+            >
+              <label
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 6,
-                  marginBottom: 10,
-                  flexWrap: 'wrap',
+                  gap: 7,
+                  cursor: 'pointer',
+                  userSelect: 'none',
                 }}
               >
-                <div style={{ display: 'flex', gap: 3 }}>
-                  {(['ALL', 'LEAD', 'MEMBER'] as const).map((tab) => (
-                    <button
-                      key={tab}
-                      type="button"
-                      onClick={() => setEmployeeFilter(tab)}
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  style={{
+                    accentColor: '#071f3d',
+                    cursor: 'pointer',
+                    width: 15,
+                    height: 15,
+                  }}
+                />
+                <span>Remember me</span>
+              </label>
+
+              <button
+                type="button"
+                onClick={() => alert('Default password for all accounts is 123456')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#9e9e9e',
+                  fontStyle: 'italic',
+                  fontSize: '0.82rem',
+                  cursor: 'pointer',
+                  padding: 0,
+                }}
+              >
+                Forgot Password?
+              </button>
+            </div>
+          </div>
+
+          {/* Solid Dark Midnight Blue LOGIN Button */}
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            style={{
+              width: '100%',
+              height: 52,
+              backgroundColor: '#071f3d',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '0 0 3px 3px',
+              fontSize: '1.02rem',
+              fontWeight: 700,
+              letterSpacing: '2.5px',
+              textTransform: 'uppercase',
+              cursor: isSubmitting ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 8px 24px rgba(7, 31, 61, 0.28)',
+              transition: 'background-color 0.2s ease',
+              marginTop: 0,
+            }}
+            onMouseEnter={(e) => {
+              if (!isSubmitting) e.currentTarget.style.backgroundColor = '#0c2f5a';
+            }}
+            onMouseLeave={(e) => {
+              if (!isSubmitting) e.currentTarget.style.backgroundColor = '#071f3d';
+            }}
+          >
+            {isSubmitting ? 'LOGGING IN...' : 'LOGIN'}
+          </button>
+        </form>
+
+        {/* Quick Demo Role Selector Pills (1-Click Fill) */}
+        <div
+          style={{
+            marginTop: 24,
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 10,
+          }}
+        >
+          <div style={{ fontSize: '0.78rem', color: '#4a3b63', fontWeight: 700, letterSpacing: '0.5px' }}>
+            ⚡ 1-Click Fast Fill Roles:
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 8,
+              justifyContent: 'center',
+              width: '100%',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => handleQuickSelect('employ20@gmail.com')}
+              style={{
+                padding: '6px 12px',
+                borderRadius: 20,
+                backgroundColor: 'rgba(255, 255, 255, 0.85)',
+                border: '1px solid rgba(255, 255, 255, 0.9)',
+                color: '#4338ca',
+                fontSize: '0.76rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+                backdropFilter: 'blur(6px)',
+              }}
+            >
+              👑 Admin (employ20)
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleQuickSelect('analyst1@gmail.com')}
+              style={{
+                padding: '6px 12px',
+                borderRadius: 20,
+                backgroundColor: 'rgba(255, 255, 255, 0.85)',
+                border: '1px solid rgba(255, 255, 255, 0.9)',
+                color: '#065f46',
+                fontSize: '0.76rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+                backdropFilter: 'blur(6px)',
+              }}
+            >
+              📊 Reviewer (analyst1)
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleQuickSelect('employ1@gmail.com')}
+              style={{
+                padding: '6px 12px',
+                borderRadius: 20,
+                backgroundColor: 'rgba(255, 255, 255, 0.85)',
+                border: '1px solid rgba(255, 255, 255, 0.9)',
+                color: '#92400e',
+                fontSize: '0.76rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+                backdropFilter: 'blur(6px)',
+              }}
+            >
+              ⚡ Squad Lead (employ1)
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleQuickSelect('employ2@gmail.com')}
+              style={{
+                padding: '6px 12px',
+                borderRadius: 20,
+                backgroundColor: 'rgba(255, 255, 255, 0.85)',
+                border: '1px solid rgba(255, 255, 255, 0.9)',
+                color: '#1e40af',
+                fontSize: '0.76rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
+                backdropFilter: 'blur(6px)',
+              }}
+            >
+              👥 Member (employ2)
+            </button>
+          </div>
+
+          {/* Toggle All 25 Accounts Directory */}
+          <button
+            type="button"
+            onClick={() => setShowDirectory(!showDirectory)}
+            style={{
+              marginTop: 10,
+              padding: '8px 16px',
+              borderRadius: 20,
+              backgroundColor: 'rgba(7, 31, 61, 0.12)',
+              border: '1px solid rgba(7, 31, 61, 0.25)',
+              color: '#071f3d',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              transition: 'all 0.2s ease',
+            }}
+          >
+            {showDirectory ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            {showDirectory ? 'Hide Full Account Directory' : 'Browse All 25 Accounts & Roles (Reviewer, Admin, Leads, Members)'}
+          </button>
+        </div>
+      </div>
+
+      {/* Expanded Directory (Reviewer, Admin, Leads & Members) */}
+      {showDirectory && (
+        <div
+          style={{
+            maxWidth: 1400,
+            width: '100%',
+            marginTop: 36,
+            animation: 'fadeIn 0.3s ease',
+          }}
+        >
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+              gap: 20,
+              alignItems: 'stretch',
+            }}
+          >
+            {/* 1. REVIEWER / ANALYST (VIEWER) */}
+            <div
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.94)',
+                backdropFilter: 'blur(10px)',
+                borderRadius: 14,
+                padding: '22px 20px',
+                border: '1px solid #e2e8f0',
+                borderTop: '5px solid #10b981',
+                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div
                       style={{
-                        padding: '3px 8px',
-                        borderRadius: 14,
-                        fontSize: '0.70rem',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        border: 'none',
-                        backgroundColor: employeeFilter === tab ? '#0284c7' : '#f1f5f9',
-                        color: employeeFilter === tab ? '#ffffff' : '#475569',
-                        transition: 'all 0.15s ease',
+                        width: 38,
+                        height: 38,
+                        borderRadius: 10,
+                        backgroundColor: '#ecfdf5',
+                        border: '1px solid #a7f3d0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                       }}
                     >
-                      {tab === 'ALL' ? `All (${allEmployees.length})` : tab === 'LEAD' ? '⚡ Leads' : '👥 Members'}
-                    </button>
-                  ))}
+                      <BarChart3 size={20} color="#059669" />
+                    </div>
+                    <div>
+                      <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                        Reviewer / Analyst
+                      </h2>
+                      <span style={{ fontSize: '0.72rem', color: '#059669', fontWeight: 700 }}>
+                        5 Dedicated Accounts
+                      </span>
+                    </div>
+                  </div>
+                  <RoleBadge role="VIEWER" />
                 </div>
 
-                <div style={{ position: 'relative', width: 110 }}>
-                  <Search size={12} style={{ position: 'absolute', left: 6, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    value={employeeSearch}
-                    onChange={(e) => setEmployeeSearch(e.target.value)}
-                    style={{
-                      padding: '3px 6px 3px 22px',
-                      borderRadius: 6,
-                      fontSize: '0.70rem',
-                      backgroundColor: '#f8fafc',
-                      border: '1px solid #cbd5e1',
-                      color: '#0f172a',
-                      width: '100%',
-                      boxSizing: 'border-box',
-                    }}
-                  />
+                <div
+                  style={{
+                    padding: '10px 12px',
+                    borderRadius: 8,
+                    backgroundColor: '#f0fdf4',
+                    border: '1px solid #bbf7d0',
+                    fontSize: '0.76rem',
+                    color: '#166534',
+                    lineHeight: 1.45,
+                    marginBottom: 14,
+                  }}
+                >
+                  📊 <strong>Reviewer can do view or analysis work:</strong> Inspect all squads, audit which team created what work item, who claimed it, and analyze task resolution/rework history.
                 </div>
-              </div>
 
-              {/* Scrollable List of Employees */}
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 7,
-                  maxHeight: 280,
-                  overflowY: 'auto',
-                  paddingRight: 4,
-                }}
-              >
-                {filteredEmployees.map((u: any) => {
-                  const isLead = u.role === 'LEAD';
-                  return (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8,
+                    maxHeight: 280,
+                    overflowY: 'auto',
+                    paddingRight: 4,
+                  }}
+                >
+                  {analystUsers.map((u: any) => (
                     <button
                       key={u.id}
                       type="button"
-                      onClick={() => handleDemoSelect(u.email)}
+                      onClick={() => handleInstantLogin(u.email)}
                       disabled={isSubmitting}
                       style={{
-                        padding: '8px 10px',
+                        padding: '10px 12px',
                         borderRadius: 8,
-                        backgroundColor: isLead ? '#fffbeb' : '#f8fafc',
-                        border: isLead ? '1px solid #fde68a' : '1px solid #e2e8f0',
+                        backgroundColor: '#ffffff',
+                        border: '1px solid #e2e8f0',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
@@ -584,199 +674,312 @@ export const LoginPage: React.FC = () => {
                         width: '100%',
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = isLead ? '#fef3c7' : '#eff6ff';
-                        e.currentTarget.style.borderColor = isLead ? '#f59e0b' : '#3b82f6';
-                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.backgroundColor = '#ecfdf5';
+                        e.currentTarget.style.borderColor = '#10b981';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = isLead ? '#fffbeb' : '#f8fafc';
-                        e.currentTarget.style.borderColor = isLead ? '#fde68a' : '#e2e8f0';
-                        e.currentTarget.style.transform = 'none';
+                        e.currentTarget.style.backgroundColor = '#ffffff';
+                        e.currentTarget.style.borderColor = '#e2e8f0';
                       }}
                     >
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ fontSize: '0.80rem', fontWeight: 700, color: '#0f172a' }}>
-                            {u.name}
-                          </span>
-                          <RoleBadge role={u.role} />
+                      <div style={{ overflow: 'hidden' }}>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {u.name}
                         </div>
-                        <div style={{ fontSize: '0.70rem', color: '#64748b', marginTop: 1 }}>
-                          {u.teamName} &bull; <span className="font-mono">{u.email}</span>
+                        <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                          {u.email}
                         </div>
                       </div>
-                      <ArrowRight size={14} color={isLead ? '#d97706' : '#2563eb'} />
+                      <ArrowRight size={16} color="#059669" style={{ flexShrink: 0, marginLeft: 8 }} />
                     </button>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
             </div>
 
-            <div style={{ marginTop: 14, fontSize: '0.70rem', color: '#0284c7', fontWeight: 600, textAlign: 'center' }}>
-              ✓ Squad workflow & task execution personas
-            </div>
-          </div>
+            {/* 2. ADMIN CONSOLE */}
+            <div
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.94)',
+                backdropFilter: 'blur(10px)',
+                borderRadius: 14,
+                padding: '22px 20px',
+                border: '1px solid #e2e8f0',
+                borderTop: '5px solid #6366f1',
+                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div
+                      style={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: 10,
+                        backgroundColor: '#eef2ff',
+                        border: '1px solid #c7d2fe',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Crown size={20} color="#4f46e5" />
+                    </div>
+                    <div>
+                      <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                        Admin Governance
+                      </h2>
+                      <span style={{ fontSize: '0.72rem', color: '#4f46e5', fontWeight: 700 }}>
+                        System Administration
+                      </span>
+                    </div>
+                  </div>
+                  <RoleBadge role="ADMIN" />
+                </div>
 
-          {/* ================= CARD 4: SIGN IN WITH CREDENTIALS ================= */}
-          <div
-            style={{
-              backgroundColor: '#ffffff',
-              borderRadius: 16,
-              padding: '22px 20px',
-              border: '1px solid #e2e8f0',
-              borderTop: '5px solid #4f46e5',
-              boxShadow: '0 4px 18px rgba(0, 0, 0, 0.05)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-            }}
-          >
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
                 <div
                   style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: 10,
-                    backgroundColor: '#eef2ff',
-                    border: '1px solid #c7d2fe',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Lock size={20} color="#4f46e5" />
-                </div>
-                <div>
-                  <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                    4. Sign In Form
-                  </h2>
-                  <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
-                    Manual Credentials
-                  </span>
-                </div>
-              </div>
-
-              <div
-                style={{
-                  padding: '9px 12px',
-                  borderRadius: 8,
-                  backgroundColor: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  fontSize: '0.76rem',
-                  color: '#475569',
-                  marginBottom: 14,
-                  lineHeight: 1.4,
-                }}
-              >
-                🔑 Default password for all accounts is <strong className="font-mono" style={{ color: '#4f46e5' }}>123456</strong>
-              </div>
-
-              {errorMsg && (
-                <div
-                  style={{
-                    padding: '9px 12px',
+                    padding: '10px 12px',
                     borderRadius: 8,
-                    backgroundColor: '#fef2f2',
-                    border: '1px solid #fecaca',
-                    color: '#b91c1c',
+                    backgroundColor: '#f5f3ff',
+                    border: '1px solid #ddd6fe',
                     fontSize: '0.76rem',
+                    color: '#5b21b6',
+                    lineHeight: 1.45,
                     marginBottom: 14,
                   }}
                 >
-                  {errorMsg}
+                  👑 <strong>Platform Admin:</strong> Complete governance control — user administration, squad creation, system settings, and org-wide configuration.
                 </div>
-              )}
 
-              <form onSubmit={handleManualLogin} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#334155', marginBottom: 5 }}>
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    className="input-control"
-                    placeholder="analyst1@gmail.com, employ1@gmail.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
+                {adminUsers.map((u: any) => (
+                  <button
+                    key={u.id}
+                    type="button"
+                    onClick={() => handleInstantLogin(u.email)}
+                    disabled={isSubmitting}
                     style={{
+                      padding: '14px 16px',
+                      borderRadius: 10,
+                      backgroundColor: '#faf5ff',
+                      border: '1px solid #e9d5ff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'all 0.15s ease',
                       width: '100%',
-                      boxSizing: 'border-box',
-                      padding: '9px 12px',
-                      borderRadius: 8,
-                      backgroundColor: '#ffffff',
-                      border: '1px solid #cbd5e1',
-                      color: '#0f172a',
                     }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#334155', marginBottom: 5 }}>
-                    Password
-                  </label>
-                  <input
-                    type="password"
-                    className="input-control"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    style={{
-                      width: '100%',
-                      boxSizing: 'border-box',
-                      padding: '9px 12px',
-                      borderRadius: 8,
-                      backgroundColor: '#ffffff',
-                      border: '1px solid #cbd5e1',
-                      color: '#0f172a',
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f3e8ff';
+                      e.currentTarget.style.borderColor = '#c084fc';
                     }}
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  style={{
-                    marginTop: 4,
-                    padding: '11px 16px',
-                    fontWeight: 700,
-                    backgroundColor: '#4f46e5',
-                    border: 'none',
-                    borderRadius: 10,
-                    color: '#ffffff',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 14px rgba(79, 70, 229, 0.3)',
-                    transition: 'all 0.15s ease',
-                  }}
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? 'Authenticating...' : 'Sign In to Workspace →'}
-                </button>
-              </form>
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#faf5ff';
+                      e.currentTarget.style.borderColor = '#e9d5ff';
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: '0.90rem', fontWeight: 800, color: '#0f172a' }}>
+                        {u.name}
+                      </div>
+                      <div style={{ fontSize: '0.76rem', color: '#6b21a8', marginTop: 3 }}>
+                        {u.email}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: 2 }}>
+                        {u.teamName}
+                      </div>
+                    </div>
+                    <ArrowRight size={18} color="#7c3aed" />
+                  </button>
+                ))}
+              </div>
             </div>
 
+            {/* 3. EMPLOYEE DIRECTORY (LEADS & MEMBERS) */}
             <div
               style={{
-                marginTop: 16,
-                padding: '10px 12px',
-                borderRadius: 10,
-                backgroundColor: '#f8fafc',
+                backgroundColor: 'rgba(255, 255, 255, 0.94)',
+                backdropFilter: 'blur(10px)',
+                borderRadius: 14,
+                padding: '22px 20px',
                 border: '1px solid #e2e8f0',
-                fontSize: '0.72rem',
-                color: '#64748b',
-                lineHeight: 1.45,
+                borderTop: '5px solid #0284c7',
+                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
               }}
             >
-              💡 <strong>4 Distinct Access Roles:</strong>
-              <div style={{ marginTop: 4 }}>
-                Reviewer / Analyst &bull; Admin &bull; Lead &bull; Member
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div
+                      style={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: 10,
+                        backgroundColor: '#f0f9ff',
+                        border: '1px solid #bae6fd',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Users size={20} color="#0284c7" />
+                    </div>
+                    <div>
+                      <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                        Employee Directory
+                      </h2>
+                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                        Leads & Members ({allEmployees.length})
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+                  <div
+                    style={{
+                      padding: '7px 10px',
+                      borderRadius: 6,
+                      backgroundColor: '#fffbeb',
+                      border: '1px solid #fde68a',
+                      fontSize: '0.72rem',
+                      color: '#92400e',
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    ⚡ <strong>Lead can control access:</strong> Review task requests, assign work, approve completed tasks, or return/reject for revisions.
+                  </div>
+                  <div
+                    style={{
+                      padding: '7px 10px',
+                      borderRadius: 6,
+                      backgroundColor: '#eff6ff',
+                      border: '1px solid #bfdbfe',
+                      fontSize: '0.72rem',
+                      color: '#1e40af',
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    👥 <strong>Employee work as following:</strong> Claim unassigned tasks from squad queue, execute work, and submit deliverables for lead sign-off.
+                  </div>
+                </div>
+
+                {/* Filter Pills & Quick Search */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 6,
+                    marginBottom: 10,
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: 3 }}>
+                    {(['ALL', 'LEAD', 'MEMBER'] as const).map((tab) => (
+                      <button
+                        key={tab}
+                        type="button"
+                        onClick={() => setEmployeeFilter(tab)}
+                        style={{
+                          padding: '3px 8px',
+                          borderRadius: 14,
+                          fontSize: '0.68rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          border: 'none',
+                          backgroundColor: employeeFilter === tab ? '#0284c7' : '#f1f5f9',
+                          color: employeeFilter === tab ? '#ffffff' : '#475569',
+                        }}
+                      >
+                        {tab === 'ALL' ? `All (${allEmployees.length})` : tab === 'LEAD' ? '⚡ Leads' : '👥 Members'}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div style={{ position: 'relative', width: 100 }}>
+                    <Search size={11} style={{ position: 'absolute', left: 6, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                    <input
+                      type="text"
+                      placeholder="Search..."
+                      value={employeeSearch}
+                      onChange={(e) => setEmployeeSearch(e.target.value)}
+                      style={{
+                        padding: '3px 6px 3px 20px',
+                        borderRadius: 6,
+                        fontSize: '0.68rem',
+                        backgroundColor: '#f8fafc',
+                        border: '1px solid #cbd5e1',
+                        color: '#0f172a',
+                        width: '100%',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* List */}
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 6,
+                    maxHeight: 220,
+                    overflowY: 'auto',
+                    paddingRight: 4,
+                  }}
+                >
+                  {filteredEmployees.map((u: any) => {
+                    const isLead = u.role === 'LEAD';
+                    return (
+                      <button
+                        key={u.id}
+                        type="button"
+                        onClick={() => handleInstantLogin(u.email)}
+                        disabled={isSubmitting}
+                        style={{
+                          padding: '8px 10px',
+                          borderRadius: 6,
+                          backgroundColor: isLead ? '#fffbeb' : '#ffffff',
+                          border: isLead ? '1px solid #fde68a' : '1px solid #e2e8f0',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          width: '100%',
+                        }}
+                      >
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0f172a' }}>
+                              {u.name}
+                            </span>
+                            <RoleBadge role={u.role} />
+                          </div>
+                          <div style={{ fontSize: '0.68rem', color: '#64748b' }}>
+                            {u.teamName} &bull; {u.email}
+                          </div>
+                        </div>
+                        <ArrowRight size={14} color={isLead ? '#d97706' : '#2563eb'} />
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
