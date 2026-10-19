@@ -7,9 +7,9 @@ import {
   BarChart3,
   Crown,
   Search,
-  ArrowRight,
-  ChevronDown,
-  ChevronUp,
+  Check,
+  Shield,
+  KeyRound,
 } from 'lucide-react';
 
 const DEDICATED_ANALYST_PERSONAS = [
@@ -61,16 +61,18 @@ const FALLBACK_EMPLOYEES = Array.from({ length: 20 }, (_, i) => {
 
 const FALLBACK_DEMO_USERS = [...DEDICATED_ANALYST_PERSONAS, ...FALLBACK_EMPLOYEES];
 
+type ActiveTab = 'ADMIN' | 'MEMBER' | 'ANALYST' | 'DIRECT';
+
 export const LoginPage: React.FC = () => {
   const { login } = useAuth();
   const { data: demoUsers } = useDemoUsersQuery();
 
-  const [email, setEmail] = useState('');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('ADMIN');
+  const [email, setEmail] = useState('employ20@gmail.com');
   const [password, setPassword] = useState('123456');
   const [rememberMe, setRememberMe] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showDirectory, setShowDirectory] = useState(false);
   const [employeeFilter, setEmployeeFilter] = useState<'ALL' | 'LEAD' | 'MEMBER'>('ALL');
   const [employeeSearch, setEmployeeSearch] = useState('');
 
@@ -94,8 +96,12 @@ export const LoginPage: React.FC = () => {
     return true;
   });
 
-  const handleManualLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleManualLogin = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!email) {
+      setErrorMsg('Please enter or select a valid username / email.');
+      return;
+    }
     setErrorMsg(null);
     setIsSubmitting(true);
     try {
@@ -107,23 +113,16 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleQuickSelect = (demoEmail: string) => {
-    setEmail(demoEmail);
+  const handleSelectUser = (selectedEmail: string, autoSubmit = false) => {
+    setEmail(selectedEmail);
     setPassword('123456');
     setErrorMsg(null);
-  };
-
-  const handleInstantLogin = async (demoEmail: string) => {
-    setEmail(demoEmail);
-    setPassword('123456');
-    setErrorMsg(null);
-    setIsSubmitting(true);
-    try {
-      await login(demoEmail, '123456');
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Login failed. If using free tier Render backend, it may take ~30-40s to spin up on first request.');
-    } finally {
-      setIsSubmitting(false);
+    if (autoSubmit) {
+      setIsSubmitting(true);
+      login(selectedEmail, '123456').catch((err: any) => {
+        setErrorMsg(err.message || 'Login failed.');
+        setIsSubmitting(false);
+      });
     }
   };
 
@@ -131,119 +130,235 @@ export const LoginPage: React.FC = () => {
     <div
       style={{
         minHeight: '100vh',
-        background: 'linear-gradient(180deg, #c79bf8 0%, #d4b2fb 32%, #cad3b1 72%, #b9c69f 100%)',
+        background: 'radial-gradient(ellipse at top, #112240 0%, #0a192f 60%, #020c1b 100%)',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        padding: '40px 16px',
+        padding: '30px 16px',
         boxSizing: 'border-box',
+        color: '#f8fafc',
         fontFamily: "'Quicksand', -apple-system, BlinkMacSystemFont, sans-serif",
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
-      {/* Center Container matching exact reference image */}
+      {/* Background Decorative Ambient Glows */}
       <div
         style={{
-          width: '100%',
-          maxWidth: 440,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
+          position: 'absolute',
+          top: '10%',
+          left: '20%',
+          width: 400,
+          height: 400,
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(232, 93, 34, 0.15) 0%, transparent 70%)',
+          pointerEvents: 'none',
+          filter: 'blur(50px)',
         }}
-      >
-        {/* Horizontal Line with Circular Avatar in Center */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            width: '100%',
-            maxWidth: 480,
-            marginBottom: 24,
-          }}
-        >
-          {/* Left subtle white line */}
-          <div
-            style={{
-              flex: 1,
-              height: 2,
-              backgroundColor: 'rgba(255, 255, 255, 0.85)',
-              borderRadius: 2,
-            }}
-          />
+      />
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '10%',
+          right: '20%',
+          width: 450,
+          height: 450,
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(79, 70, 229, 0.18) 0%, transparent 70%)',
+          pointerEvents: 'none',
+          filter: 'blur(50px)',
+        }}
+      />
 
-          {/* Central Circular Avatar */}
+      <div style={{ width: '100%', maxWidth: 760, zIndex: 1 }}>
+        {/* Main Header matching Multi Login & Signup style */}
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div
             style={{
-              width: 96,
-              height: 96,
-              borderRadius: '50%',
-              backgroundColor: '#ffffff',
-              boxShadow: '0 6px 20px rgba(0, 0, 0, 0.10)',
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              margin: '0 14px',
-              flexShrink: 0,
+              width: 50,
+              height: 50,
+              borderRadius: 14,
+              backgroundColor: 'rgba(232, 93, 34, 0.15)',
+              border: '1px solid rgba(232, 93, 34, 0.35)',
+              marginBottom: 12,
             }}
           >
-            {/* Minimalist Purple Outline User Icon */}
-            <svg
-              width="44"
-              height="44"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#b58bf4"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="7" r="4" />
-              <path d="M5.5 21a6.5 6.5 0 0 1 13 0" />
-            </svg>
+            <Shield size={28} color="#e85d22" />
           </div>
-
-          {/* Right subtle white line */}
-          <div
+          <h1
             style={{
-              flex: 1,
-              height: 2,
-              backgroundColor: 'rgba(255, 255, 255, 0.85)',
-              borderRadius: 2,
+              fontSize: '1.9rem',
+              fontWeight: 800,
+              letterSpacing: '5px',
+              textTransform: 'uppercase',
+              color: '#ffffff',
+              margin: 0,
+              textShadow: '0 2px 10px rgba(0,0,0,0.5)',
             }}
-          />
+          >
+            MULTI LOGIN & WORKSPACE PORTAL
+          </h1>
+          <p
+            style={{
+              color: '#94a3b8',
+              fontSize: '0.88rem',
+              marginTop: 6,
+              letterSpacing: '1px',
+            }}
+          >
+            Role-Based Access for System Admin, Squad Employees & Independent Analysts
+          </p>
         </div>
 
-        {/* Form Wrap */}
-        <form
-          onSubmit={handleManualLogin}
+        {/* Multi-Section Glassmorphism Card */}
+        <div
           style={{
-            width: '100%',
-            display: 'flex',
-            flexDirection: 'column',
+            backgroundColor: 'rgba(13, 27, 46, 0.75)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            borderRadius: 8,
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.55), 0 0 35px rgba(232, 93, 34, 0.1)',
+            overflow: 'hidden',
           }}
         >
-          {/* White Card */}
+          {/* Top Multi-Tab Bar (Exact style from screenshot: LOGIN | SIGNUP | RESET PASSWORD | LOGIN OPTIONS) */}
           <div
             style={{
-              backgroundColor: '#ffffff',
-              borderRadius: 3,
-              boxShadow: '0 12px 32px rgba(0, 0, 0, 0.16)',
-              padding: '34px 34px 26px 34px',
-              boxSizing: 'border-box',
-              width: '100%',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
             }}
           >
-            {/* Error Message if any */}
+            {/* Tab 1: Login as Admin */}
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('ADMIN');
+                setEmail('employ20@gmail.com');
+              }}
+              style={{
+                padding: '16px 12px',
+                border: 'none',
+                borderRight: '1px solid rgba(255, 255, 255, 0.12)',
+                backgroundColor: activeTab === 'ADMIN' ? '#e85d22' : 'rgba(255, 255, 255, 0.04)',
+                color: activeTab === 'ADMIN' ? '#ffffff' : '#cbd5e1',
+                fontSize: '0.84rem',
+                fontWeight: 800,
+                letterSpacing: '1.5px',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <Crown size={15} />
+              <span>LOGIN AS ADMIN</span>
+            </button>
+
+            {/* Tab 2: Login as Member / Employee */}
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('MEMBER');
+                setEmail('employ1@gmail.com');
+              }}
+              style={{
+                padding: '16px 12px',
+                border: 'none',
+                borderRight: '1px solid rgba(255, 255, 255, 0.12)',
+                backgroundColor: activeTab === 'MEMBER' ? '#e85d22' : 'rgba(255, 255, 255, 0.04)',
+                color: activeTab === 'MEMBER' ? '#ffffff' : '#cbd5e1',
+                fontSize: '0.84rem',
+                fontWeight: 800,
+                letterSpacing: '1.5px',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <Users size={15} />
+              <span>LOGIN AS MEMBER</span>
+            </button>
+
+            {/* Tab 3: Login as Analyst / Reviewer */}
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('ANALYST');
+                setEmail('analyst1@gmail.com');
+              }}
+              style={{
+                padding: '16px 12px',
+                border: 'none',
+                borderRight: '1px solid rgba(255, 255, 255, 0.12)',
+                backgroundColor: activeTab === 'ANALYST' ? '#e85d22' : 'rgba(255, 255, 255, 0.04)',
+                color: activeTab === 'ANALYST' ? '#ffffff' : '#cbd5e1',
+                fontSize: '0.84rem',
+                fontWeight: 800,
+                letterSpacing: '1.5px',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <BarChart3 size={15} />
+              <span>LOGIN AS ANALYST</span>
+            </button>
+
+            {/* Tab 4: Direct Sign In Form */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('DIRECT')}
+              style={{
+                padding: '16px 12px',
+                border: 'none',
+                backgroundColor: activeTab === 'DIRECT' ? '#e85d22' : 'rgba(255, 255, 255, 0.04)',
+                color: activeTab === 'DIRECT' ? '#ffffff' : '#cbd5e1',
+                fontSize: '0.84rem',
+                fontWeight: 800,
+                letterSpacing: '1.5px',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <KeyRound size={15} />
+              <span>DIRECT LOGIN</span>
+            </button>
+          </div>
+
+          {/* Tab Content Body */}
+          <div style={{ padding: '30px 32px' }}>
             {errorMsg && (
               <div
                 style={{
-                  padding: '9px 12px',
-                  borderRadius: 4,
-                  backgroundColor: '#fef2f2',
-                  border: '1px solid #fecaca',
-                  color: '#b91c1c',
-                  fontSize: '0.78rem',
-                  marginBottom: 16,
+                  padding: '10px 14px',
+                  borderRadius: 6,
+                  backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                  border: '1px solid rgba(239, 68, 68, 0.4)',
+                  color: '#fca5a5',
+                  fontSize: '0.82rem',
+                  marginBottom: 20,
                   textAlign: 'center',
                 }}
               >
@@ -251,735 +366,552 @@ export const LoginPage: React.FC = () => {
               </div>
             )}
 
-            {/* Input 1: Username / Email */}
-            <div
-              style={{
-                display: 'flex',
-                height: 50,
-                marginBottom: 16,
-                borderRadius: 2,
-                overflow: 'hidden',
-              }}
-            >
-              {/* Left Darker Gray Icon Box */}
-              <div
-                style={{
-                  width: 52,
-                  backgroundColor: '#b8b8b8',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="#3d3d3d"
-                >
-                  <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
-                </svg>
-              </div>
-
-              {/* Right Lighter Gray Input Box */}
-              <input
-                type="text"
-                placeholder="Username"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                style={{
-                  flex: 1,
-                  backgroundColor: '#d8d8d8',
-                  border: 'none',
-                  outline: 'none',
-                  padding: '0 16px',
-                  fontSize: '0.96rem',
-                  color: '#262626',
-                  fontFamily: 'inherit',
-                }}
-              />
-            </div>
-
-            {/* Input 2: Password */}
-            <div
-              style={{
-                display: 'flex',
-                height: 50,
-                marginBottom: 18,
-                borderRadius: 2,
-                overflow: 'hidden',
-              }}
-            >
-              {/* Left Darker Gray Icon Box */}
-              <div
-                style={{
-                  width: 52,
-                  backgroundColor: '#b8b8b8',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="#3d3d3d"
-                >
-                  <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" />
-                </svg>
-              </div>
-
-              {/* Right Lighter Gray Input Box */}
-              <input
-                type="password"
-                placeholder="************"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                style={{
-                  flex: 1,
-                  backgroundColor: '#d8d8d8',
-                  border: 'none',
-                  outline: 'none',
-                  padding: '0 16px',
-                  fontSize: '0.96rem',
-                  color: '#262626',
-                  fontFamily: 'inherit',
-                  letterSpacing: '2px',
-                }}
-              />
-            </div>
-
-            {/* Remember me & Forgot Password */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                fontSize: '0.82rem',
-                color: '#848484',
-                marginTop: 6,
-              }}
-            >
-              <label
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 7,
-                  cursor: 'pointer',
-                  userSelect: 'none',
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  style={{
-                    accentColor: '#071f3d',
-                    cursor: 'pointer',
-                    width: 15,
-                    height: 15,
-                  }}
-                />
-                <span>Remember me</span>
-              </label>
-
-              <button
-                type="button"
-                onClick={() => alert('Default password for all accounts is 123456')}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#9e9e9e',
-                  fontStyle: 'italic',
-                  fontSize: '0.82rem',
-                  cursor: 'pointer',
-                  padding: 0,
-                }}
-              >
-                Forgot Password?
-              </button>
-            </div>
-          </div>
-
-          {/* Solid Dark Midnight Blue LOGIN Button */}
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            style={{
-              width: '100%',
-              height: 52,
-              backgroundColor: '#071f3d',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '0 0 3px 3px',
-              fontSize: '1.02rem',
-              fontWeight: 700,
-              letterSpacing: '2.5px',
-              textTransform: 'uppercase',
-              cursor: isSubmitting ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 8px 24px rgba(7, 31, 61, 0.28)',
-              transition: 'background-color 0.2s ease',
-              marginTop: 0,
-            }}
-            onMouseEnter={(e) => {
-              if (!isSubmitting) e.currentTarget.style.backgroundColor = '#0c2f5a';
-            }}
-            onMouseLeave={(e) => {
-              if (!isSubmitting) e.currentTarget.style.backgroundColor = '#071f3d';
-            }}
-          >
-            {isSubmitting ? 'LOGGING IN...' : 'LOGIN'}
-          </button>
-        </form>
-
-        {/* Quick Demo Role Selector Pills (1-Click Fill) */}
-        <div
-          style={{
-            marginTop: 24,
-            width: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 10,
-          }}
-        >
-          <div style={{ fontSize: '0.78rem', color: '#4a3b63', fontWeight: 700, letterSpacing: '0.5px' }}>
-            ⚡ 1-Click Fast Fill Roles:
-          </div>
-
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 8,
-              justifyContent: 'center',
-              width: '100%',
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => handleQuickSelect('employ20@gmail.com')}
-              style={{
-                padding: '6px 12px',
-                borderRadius: 20,
-                backgroundColor: 'rgba(255, 255, 255, 0.85)',
-                border: '1px solid rgba(255, 255, 255, 0.9)',
-                color: '#4338ca',
-                fontSize: '0.76rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
-                backdropFilter: 'blur(6px)',
-              }}
-            >
-              👑 Admin (employ20)
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickSelect('analyst1@gmail.com')}
-              style={{
-                padding: '6px 12px',
-                borderRadius: 20,
-                backgroundColor: 'rgba(255, 255, 255, 0.85)',
-                border: '1px solid rgba(255, 255, 255, 0.9)',
-                color: '#065f46',
-                fontSize: '0.76rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
-                backdropFilter: 'blur(6px)',
-              }}
-            >
-              📊 Reviewer (analyst1)
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickSelect('employ1@gmail.com')}
-              style={{
-                padding: '6px 12px',
-                borderRadius: 20,
-                backgroundColor: 'rgba(255, 255, 255, 0.85)',
-                border: '1px solid rgba(255, 255, 255, 0.9)',
-                color: '#92400e',
-                fontSize: '0.76rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
-                backdropFilter: 'blur(6px)',
-              }}
-            >
-              ⚡ Squad Lead (employ1)
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickSelect('employ2@gmail.com')}
-              style={{
-                padding: '6px 12px',
-                borderRadius: 20,
-                backgroundColor: 'rgba(255, 255, 255, 0.85)',
-                border: '1px solid rgba(255, 255, 255, 0.9)',
-                color: '#1e40af',
-                fontSize: '0.76rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
-                backdropFilter: 'blur(6px)',
-              }}
-            >
-              👥 Member (employ2)
-            </button>
-          </div>
-
-          {/* Toggle All 25 Accounts Directory */}
-          <button
-            type="button"
-            onClick={() => setShowDirectory(!showDirectory)}
-            style={{
-              marginTop: 10,
-              padding: '8px 16px',
-              borderRadius: 20,
-              backgroundColor: 'rgba(7, 31, 61, 0.12)',
-              border: '1px solid rgba(7, 31, 61, 0.25)',
-              color: '#071f3d',
-              fontSize: '0.78rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              transition: 'all 0.2s ease',
-            }}
-          >
-            {showDirectory ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-            {showDirectory ? 'Hide Full Account Directory' : 'Browse All 25 Accounts & Roles (Reviewer, Admin, Leads, Members)'}
-          </button>
-        </div>
-      </div>
-
-      {/* Expanded Directory (Reviewer, Admin, Leads & Members) */}
-      {showDirectory && (
-        <div
-          style={{
-            maxWidth: 1400,
-            width: '100%',
-            marginTop: 36,
-            animation: 'fadeIn 0.3s ease',
-          }}
-        >
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-              gap: 20,
-              alignItems: 'stretch',
-            }}
-          >
-            {/* 1. REVIEWER / ANALYST (VIEWER) */}
-            <div
-              style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.94)',
-                backdropFilter: 'blur(10px)',
-                borderRadius: 14,
-                padding: '22px 20px',
-                border: '1px solid #e2e8f0',
-                borderTop: '5px solid #10b981',
-                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-              }}
-            >
+            {/* ================= SECTION 1: ADMIN ================= */}
+            {activeTab === 'ADMIN' && (
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div
-                      style={{
-                        width: 38,
-                        height: 38,
-                        borderRadius: 10,
-                        backgroundColor: '#ecfdf5',
-                        border: '1px solid #a7f3d0',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <BarChart3 size={20} color="#059669" />
-                    </div>
-                    <div>
-                      <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                        Reviewer / Analyst
-                      </h2>
-                      <span style={{ fontSize: '0.72rem', color: '#059669', fontWeight: 700 }}>
-                        5 Dedicated Accounts
-                      </span>
-                    </div>
-                  </div>
-                  <RoleBadge role="VIEWER" />
-                </div>
-
-                <div
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: 8,
-                    backgroundColor: '#f0fdf4',
-                    border: '1px solid #bbf7d0',
-                    fontSize: '0.76rem',
-                    color: '#166534',
-                    lineHeight: 1.45,
-                    marginBottom: 14,
-                  }}
-                >
-                  📊 <strong>Reviewer can do view or analysis work:</strong> Inspect all squads, audit which team created what work item, who claimed it, and analyze task resolution/rework history.
-                </div>
-
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 8,
-                    maxHeight: 280,
-                    overflowY: 'auto',
-                    paddingRight: 4,
-                  }}
-                >
-                  {analystUsers.map((u: any) => (
-                    <button
-                      key={u.id}
-                      type="button"
-                      onClick={() => handleInstantLogin(u.email)}
-                      disabled={isSubmitting}
-                      style={{
-                        padding: '10px 12px',
-                        borderRadius: 8,
-                        backgroundColor: '#ffffff',
-                        border: '1px solid #e2e8f0',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        transition: 'all 0.15s ease',
-                        width: '100%',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#ecfdf5';
-                        e.currentTarget.style.borderColor = '#10b981';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#ffffff';
-                        e.currentTarget.style.borderColor = '#e2e8f0';
-                      }}
-                    >
-                      <div style={{ overflow: 'hidden' }}>
-                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {u.name}
-                        </div>
-                        <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
-                          {u.email}
-                        </div>
-                      </div>
-                      <ArrowRight size={16} color="#059669" style={{ flexShrink: 0, marginLeft: 8 }} />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* 2. ADMIN CONSOLE */}
-            <div
-              style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.94)',
-                backdropFilter: 'blur(10px)',
-                borderRadius: 14,
-                padding: '22px 20px',
-                border: '1px solid #e2e8f0',
-                borderTop: '5px solid #6366f1',
-                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-              }}
-            >
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div
-                      style={{
-                        width: 38,
-                        height: 38,
-                        borderRadius: 10,
-                        backgroundColor: '#eef2ff',
-                        border: '1px solid #c7d2fe',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Crown size={20} color="#4f46e5" />
-                    </div>
-                    <div>
-                      <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                        Admin Governance
-                      </h2>
-                      <span style={{ fontSize: '0.72rem', color: '#4f46e5', fontWeight: 700 }}>
-                        System Administration
-                      </span>
-                    </div>
-                  </div>
-                  <RoleBadge role="ADMIN" />
-                </div>
-
-                <div
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: 8,
-                    backgroundColor: '#f5f3ff',
-                    border: '1px solid #ddd6fe',
-                    fontSize: '0.76rem',
-                    color: '#5b21b6',
-                    lineHeight: 1.45,
-                    marginBottom: 14,
-                  }}
-                >
-                  👑 <strong>Platform Admin:</strong> Complete governance control — user administration, squad creation, system settings, and org-wide configuration.
-                </div>
-
-                {adminUsers.map((u: any) => (
-                  <button
-                    key={u.id}
-                    type="button"
-                    onClick={() => handleInstantLogin(u.email)}
-                    disabled={isSubmitting}
-                    style={{
-                      padding: '14px 16px',
-                      borderRadius: 10,
-                      backgroundColor: '#faf5ff',
-                      border: '1px solid #e9d5ff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      transition: 'all 0.15s ease',
-                      width: '100%',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f3e8ff';
-                      e.currentTarget.style.borderColor = '#c084fc';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#faf5ff';
-                      e.currentTarget.style.borderColor = '#e9d5ff';
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontSize: '0.90rem', fontWeight: 800, color: '#0f172a' }}>
-                        {u.name}
-                      </div>
-                      <div style={{ fontSize: '0.76rem', color: '#6b21a8', marginTop: 3 }}>
-                        {u.email}
-                      </div>
-                      <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: 2 }}>
-                        {u.teamName}
-                      </div>
-                    </div>
-                    <ArrowRight size={18} color="#7c3aed" />
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* 3. EMPLOYEE DIRECTORY (LEADS & MEMBERS) */}
-            <div
-              style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.94)',
-                backdropFilter: 'blur(10px)',
-                borderRadius: 14,
-                padding: '22px 20px',
-                border: '1px solid #e2e8f0',
-                borderTop: '5px solid #0284c7',
-                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-              }}
-            >
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div
-                      style={{
-                        width: 38,
-                        height: 38,
-                        borderRadius: 10,
-                        backgroundColor: '#f0f9ff',
-                        border: '1px solid #bae6fd',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Users size={20} color="#0284c7" />
-                    </div>
-                    <div>
-                      <h2 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                        Employee Directory
-                      </h2>
-                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
-                        Leads & Members ({allEmployees.length})
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
-                  <div
-                    style={{
-                      padding: '7px 10px',
-                      borderRadius: 6,
-                      backgroundColor: '#fffbeb',
-                      border: '1px solid #fde68a',
-                      fontSize: '0.72rem',
-                      color: '#92400e',
-                      lineHeight: 1.35,
-                    }}
-                  >
-                    ⚡ <strong>Lead can control access:</strong> Review task requests, assign work, approve completed tasks, or return/reject for revisions.
-                  </div>
-                  <div
-                    style={{
-                      padding: '7px 10px',
-                      borderRadius: 6,
-                      backgroundColor: '#eff6ff',
-                      border: '1px solid #bfdbfe',
-                      fontSize: '0.72rem',
-                      color: '#1e40af',
-                      lineHeight: 1.35,
-                    }}
-                  >
-                    👥 <strong>Employee work as following:</strong> Claim unassigned tasks from squad queue, execute work, and submit deliverables for lead sign-off.
-                  </div>
-                </div>
-
-                {/* Filter Pills & Quick Search */}
                 <div
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    gap: 6,
-                    marginBottom: 10,
-                    flexWrap: 'wrap',
+                    marginBottom: 16,
                   }}
                 >
-                  <div style={{ display: 'flex', gap: 3 }}>
-                    {(['ALL', 'LEAD', 'MEMBER'] as const).map((tab) => (
-                      <button
-                        key={tab}
-                        type="button"
-                        onClick={() => setEmployeeFilter(tab)}
-                        style={{
-                          padding: '3px 8px',
-                          borderRadius: 14,
-                          fontSize: '0.68rem',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          border: 'none',
-                          backgroundColor: employeeFilter === tab ? '#0284c7' : '#f1f5f9',
-                          color: employeeFilter === tab ? '#ffffff' : '#475569',
-                        }}
-                      >
-                        {tab === 'ALL' ? `All (${allEmployees.length})` : tab === 'LEAD' ? '⚡ Leads' : '👥 Members'}
-                      </button>
-                    ))}
+                  <div>
+                    <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+                      👑 System Administrator Console
+                    </h2>
+                    <p style={{ fontSize: '0.80rem', color: '#94a3b8', margin: '4px 0 0 0' }}>
+                      Complete platform authority — user administration, squad creation & org settings.
+                    </p>
                   </div>
-
-                  <div style={{ position: 'relative', width: 100 }}>
-                    <Search size={11} style={{ position: 'absolute', left: 6, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                    <input
-                      type="text"
-                      placeholder="Search..."
-                      value={employeeSearch}
-                      onChange={(e) => setEmployeeSearch(e.target.value)}
-                      style={{
-                        padding: '3px 6px 3px 20px',
-                        borderRadius: 6,
-                        fontSize: '0.68rem',
-                        backgroundColor: '#f8fafc',
-                        border: '1px solid #cbd5e1',
-                        color: '#0f172a',
-                        width: '100%',
-                        boxSizing: 'border-box',
-                      }}
-                    />
-                  </div>
+                  <RoleBadge role="ADMIN" />
                 </div>
 
-                {/* List */}
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 6,
-                    maxHeight: 220,
-                    overflowY: 'auto',
-                    paddingRight: 4,
-                  }}
-                >
-                  {filteredEmployees.map((u: any) => {
-                    const isLead = u.role === 'LEAD';
+                {/* Admin Persona List */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+                  {adminUsers.map((u: any) => {
+                    const isSelected = email === u.email;
                     return (
-                      <button
+                      <div
                         key={u.id}
-                        type="button"
-                        onClick={() => handleInstantLogin(u.email)}
-                        disabled={isSubmitting}
+                        onClick={() => handleSelectUser(u.email)}
                         style={{
-                          padding: '8px 10px',
-                          borderRadius: 6,
-                          backgroundColor: isLead ? '#fffbeb' : '#ffffff',
-                          border: isLead ? '1px solid #fde68a' : '1px solid #e2e8f0',
+                          padding: '14px 18px',
+                          borderRadius: 8,
+                          backgroundColor: isSelected ? 'rgba(232, 93, 34, 0.18)' : 'rgba(255, 255, 255, 0.05)',
+                          border: isSelected ? '1px solid #e85d22' : '1px solid rgba(255, 255, 255, 0.1)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
                           cursor: 'pointer',
-                          textAlign: 'left',
-                          width: '100%',
+                          transition: 'all 0.15s ease',
                         }}
                       >
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0f172a' }}>
-                              {u.name}
-                            </span>
-                            <RoleBadge role={u.role} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                          <div
+                            style={{
+                              width: 40,
+                              height: 40,
+                              borderRadius: '50%',
+                              backgroundColor: '#e85d22',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#ffffff',
+                              fontWeight: 800,
+                              fontSize: '0.90rem',
+                            }}
+                          >
+                            AD
                           </div>
-                          <div style={{ fontSize: '0.68rem', color: '#64748b' }}>
-                            {u.teamName} &bull; {u.email}
+                          <div>
+                            <div style={{ fontSize: '0.94rem', fontWeight: 800, color: '#ffffff' }}>
+                              {u.name}
+                            </div>
+                            <div style={{ fontSize: '0.78rem', color: '#cbd5e1', fontFamily: 'monospace' }}>
+                              {u.email} &bull; <span style={{ color: '#fb923c' }}>{u.teamName}</span>
+                            </div>
                           </div>
                         </div>
-                        <ArrowRight size={14} color={isLead ? '#d97706' : '#2563eb'} />
-                      </button>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          {isSelected && (
+                            <span
+                              style={{
+                                fontSize: '0.72rem',
+                                color: '#e85d22',
+                                fontWeight: 800,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 4,
+                              }}
+                            >
+                              <Check size={14} /> SELECTED
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSelectUser(u.email, true);
+                            }}
+                            disabled={isSubmitting}
+                            style={{
+                              padding: '6px 14px',
+                              borderRadius: 4,
+                              backgroundColor: '#e85d22',
+                              color: '#ffffff',
+                              border: 'none',
+                              fontSize: '0.76rem',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            1-Click Login →
+                          </button>
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* ================= SECTION 2: MEMBER / EMPLOYEE ================= */}
+            {activeTab === 'MEMBER' && (
+              <div>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: 14,
+                    flexWrap: 'wrap',
+                    gap: 10,
+                  }}
+                >
+                  <div>
+                    <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+                      👥 Squad Employees Directory (Leads & Members)
+                    </h2>
+                    <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '4px 0 0 0' }}>
+                      ⚡ <strong>Lead can control access</strong> &bull; 👥 <strong>Employees claim & execute squad tasks</strong>
+                    </p>
+                  </div>
+
+                  {/* Filter Tabs & Search */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ display: 'flex', gap: 3, backgroundColor: 'rgba(255,255,255,0.06)', padding: 3, borderRadius: 6 }}>
+                      {(['ALL', 'LEAD', 'MEMBER'] as const).map((tab) => (
+                        <button
+                          key={tab}
+                          type="button"
+                          onClick={() => setEmployeeFilter(tab)}
+                          style={{
+                            padding: '4px 10px',
+                            borderRadius: 4,
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            border: 'none',
+                            backgroundColor: employeeFilter === tab ? '#e85d22' : 'transparent',
+                            color: employeeFilter === tab ? '#ffffff' : '#94a3b8',
+                          }}
+                        >
+                          {tab === 'ALL' ? `All (${allEmployees.length})` : tab === 'LEAD' ? '⚡ Leads (3)' : '👥 Members (16)'}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div style={{ position: 'relative', width: 140 }}>
+                      <Search size={12} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                      <input
+                        type="text"
+                        placeholder="Search employee..."
+                        value={employeeSearch}
+                        onChange={(e) => setEmployeeSearch(e.target.value)}
+                        style={{
+                          padding: '5px 8px 5px 26px',
+                          borderRadius: 6,
+                          fontSize: '0.72rem',
+                          backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                          border: '1px solid rgba(255, 255, 255, 0.15)',
+                          color: '#ffffff',
+                          width: '100%',
+                          boxSizing: 'border-box',
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Employee Scrollable List */}
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8,
+                    maxHeight: 250,
+                    overflowY: 'auto',
+                    marginBottom: 20,
+                    paddingRight: 6,
+                  }}
+                >
+                  {filteredEmployees.map((u: any) => {
+                    const isSelected = email === u.email;
+                    const isLead = u.role === 'LEAD';
+                    return (
+                      <div
+                        key={u.id}
+                        onClick={() => handleSelectUser(u.email)}
+                        style={{
+                          padding: '10px 14px',
+                          borderRadius: 6,
+                          backgroundColor: isSelected ? 'rgba(232, 93, 34, 0.18)' : 'rgba(255, 255, 255, 0.04)',
+                          border: isSelected ? '1px solid #e85d22' : '1px solid rgba(255, 255, 255, 0.08)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div
+                            style={{
+                              width: 32,
+                              height: 32,
+                              borderRadius: '50%',
+                              backgroundColor: isLead ? '#d97706' : '#2563eb',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#ffffff',
+                              fontWeight: 800,
+                              fontSize: '0.75rem',
+                            }}
+                          >
+                            {u.name.substring(0, 2).toUpperCase()}
+                          </div>
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: '0.86rem', fontWeight: 700, color: '#ffffff' }}>
+                                {u.name}
+                              </span>
+                              <RoleBadge role={u.role} />
+                            </div>
+                            <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+                              {u.teamName} &bull; <span style={{ fontFamily: 'monospace' }}>{u.email}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          {isSelected && (
+                            <span style={{ fontSize: '0.70rem', color: '#e85d22', fontWeight: 800 }}>
+                              ✓ SELECTED
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSelectUser(u.email, true);
+                            }}
+                            disabled={isSubmitting}
+                            style={{
+                              padding: '5px 12px',
+                              borderRadius: 4,
+                              backgroundColor: isSelected ? '#e85d22' : 'rgba(255, 255, 255, 0.1)',
+                              color: '#ffffff',
+                              border: 'none',
+                              fontSize: '0.72rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Select & Login →
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ================= SECTION 3: ANALYST ================= */}
+            {activeTab === 'ANALYST' && (
+              <div>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: 14,
+                  }}
+                >
+                  <div>
+                    <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+                      📊 Dedicated Reviewers & Analysts (5 Accounts)
+                    </h2>
+                    <p style={{ fontSize: '0.80rem', color: '#94a3b8', margin: '4px 0 0 0' }}>
+                      Reviewer can do view or analysis work: see all squads, what work was created, who claimed it, and status.
+                    </p>
+                  </div>
+                  <RoleBadge role="VIEWER" />
+                </div>
+
+                {/* Analyst List */}
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8,
+                    maxHeight: 250,
+                    overflowY: 'auto',
+                    marginBottom: 20,
+                    paddingRight: 6,
+                  }}
+                >
+                  {analystUsers.map((u: any) => {
+                    const isSelected = email === u.email;
+                    return (
+                      <div
+                        key={u.id}
+                        onClick={() => handleSelectUser(u.email)}
+                        style={{
+                          padding: '12px 16px',
+                          borderRadius: 6,
+                          backgroundColor: isSelected ? 'rgba(232, 93, 34, 0.18)' : 'rgba(255, 255, 255, 0.04)',
+                          border: isSelected ? '1px solid #e85d22' : '1px solid rgba(255, 255, 255, 0.08)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <div
+                            style={{
+                              width: 34,
+                              height: 34,
+                              borderRadius: '50%',
+                              backgroundColor: '#059669',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#ffffff',
+                              fontWeight: 800,
+                              fontSize: '0.78rem',
+                            }}
+                          >
+                            AN
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#ffffff' }}>
+                              {u.name}
+                            </div>
+                            <div style={{ fontSize: '0.74rem', color: '#cbd5e1', fontFamily: 'monospace' }}>
+                              {u.email}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          {isSelected && (
+                            <span style={{ fontSize: '0.70rem', color: '#e85d22', fontWeight: 800 }}>
+                              ✓ SELECTED
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSelectUser(u.email, true);
+                            }}
+                            disabled={isSubmitting}
+                            style={{
+                              padding: '5px 12px',
+                              borderRadius: 4,
+                              backgroundColor: '#059669',
+                              color: '#ffffff',
+                              border: 'none',
+                              fontSize: '0.72rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            1-Click Login →
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ================= SECTION 4: DIRECT LOGIN ================= */}
+            {activeTab === 'DIRECT' && (
+              <div style={{ marginBottom: 16 }}>
+                <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#ffffff', margin: '0 0 6px 0' }}>
+                  🔑 Sign In with Workspace Credentials
+                </h2>
+                <p style={{ fontSize: '0.80rem', color: '#94a3b8', margin: '0 0 16px 0' }}>
+                  Type any registered employee, lead, admin or reviewer email address. Default password is <span style={{ color: '#fb923c', fontWeight: 700 }}>123456</span>.
+                </p>
+              </div>
+            )}
+
+            {/* ================= INPUTS & LOGIN BUTTON (Exact from user image) ================= */}
+            <form onSubmit={handleManualLogin}>
+              <div style={{ maxWidth: 440, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {/* Username / Email Bar */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.76rem', color: '#94a3b8', marginBottom: 4, fontWeight: 700 }}>
+                    USERNAME / EMAIL:
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Username"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      height: 48,
+                      backgroundColor: 'rgba(74, 95, 122, 0.45)',
+                      border: '1px solid rgba(255, 255, 255, 0.18)',
+                      borderRadius: 4,
+                      padding: '0 16px',
+                      color: '#ffffff',
+                      fontSize: '0.94rem',
+                      outline: 'none',
+                      fontFamily: 'inherit',
+                    }}
+                  />
+                </div>
+
+                {/* Password Bar */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.76rem', color: '#94a3b8', marginBottom: 4, fontWeight: 700 }}>
+                    PASSWORD:
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      height: 48,
+                      backgroundColor: 'rgba(74, 95, 122, 0.45)',
+                      border: '1px solid rgba(255, 255, 255, 0.18)',
+                      borderRadius: 4,
+                      padding: '0 16px',
+                      color: '#ffffff',
+                      fontSize: '0.94rem',
+                      outline: 'none',
+                      fontFamily: 'inherit',
+                      letterSpacing: '2px',
+                    }}
+                  />
+                </div>
+
+                {/* Remember Me Checkbox */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    marginTop: 4,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    id="remember_me"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    style={{
+                      accentColor: '#e85d22',
+                      width: 16,
+                      height: 16,
+                      cursor: 'pointer',
+                    }}
+                  />
+                  <label
+                    htmlFor="remember_me"
+                    style={{
+                      fontSize: '0.80rem',
+                      color: '#cbd5e1',
+                      letterSpacing: '1px',
+                      cursor: 'pointer',
+                      userSelect: 'none',
+                      fontWeight: 600,
+                    }}
+                  >
+                    REMEMBER ME
+                  </label>
+                </div>
+
+                {/* Prominent High-Contrast Orange LOGIN Button */}
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  style={{
+                    width: '100%',
+                    maxWidth: 240,
+                    margin: '6px auto 0 auto',
+                    height: 46,
+                    backgroundColor: '#e85d22',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: 3,
+                    fontSize: '0.96rem',
+                    fontWeight: 800,
+                    letterSpacing: '2px',
+                    textTransform: 'uppercase',
+                    cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 6px 20px rgba(232, 93, 34, 0.45)',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSubmitting) e.currentTarget.style.backgroundColor = '#d14f19';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSubmitting) e.currentTarget.style.backgroundColor = '#e85d22';
+                  }}
+                >
+                  {isSubmitting ? 'LOGGING IN...' : 'LOGIN'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
-      )}
+
+        {/* Footer Text (Exact match from screenshot) */}
+        <div
+          style={{
+            textAlign: 'center',
+            marginTop: 26,
+            color: '#64748b',
+            fontSize: '0.78rem',
+            letterSpacing: '0.8px',
+          }}
+        >
+          &copy; 2026 Multi Login &amp; Workspace Portal. All Rights Reserved | Design by Newtonite
+        </div>
+      </div>
     </div>
   );
 };
